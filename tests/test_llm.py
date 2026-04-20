@@ -12,7 +12,7 @@ def mock_ollama_chat():
 
 
 def test_cleanup_calls_chat_with_think_false_and_keep_alive_3m(mock_ollama_chat):
-    from wisprflow.llm import cleanup_text
+    from talk2type.llm import cleanup_text
 
     cleanup_text("dzisiaj byłem w sklepie", "pl")
 
@@ -24,8 +24,8 @@ def test_cleanup_calls_chat_with_think_false_and_keep_alive_3m(mock_ollama_chat)
 
 
 def test_cleanup_uses_correct_prompt_per_language(mock_ollama_chat):
-    from wisprflow.llm import cleanup_text
-    from wisprflow.prompts import SYSTEM_PL, SYSTEM_EN
+    from talk2type.llm import cleanup_text
+    from talk2type.prompts import SYSTEM_PL, SYSTEM_EN
 
     cleanup_text("test", "pl")
     messages_pl = mock_ollama_chat.call_args.kwargs["messages"]
@@ -37,7 +37,7 @@ def test_cleanup_uses_correct_prompt_per_language(mock_ollama_chat):
 
 
 def test_cleanup_returns_raw_on_exception(mock_ollama_chat):
-    from wisprflow.llm import cleanup_text
+    from talk2type.llm import cleanup_text
 
     mock_ollama_chat.side_effect = ConnectionError("no ollama")
     result = cleanup_text("abc", "pl")
@@ -45,7 +45,7 @@ def test_cleanup_returns_raw_on_exception(mock_ollama_chat):
 
 
 def test_cleanup_empty_input_short_circuits(mock_ollama_chat):
-    from wisprflow.llm import cleanup_text
+    from talk2type.llm import cleanup_text
 
     # Empty string
     cleanup_text("", "pl")
@@ -57,7 +57,7 @@ def test_cleanup_empty_input_short_circuits(mock_ollama_chat):
 
 
 def test_cleanup_strips_quotes_from_response(mock_ollama_chat):
-    from wisprflow.llm import cleanup_text
+    from talk2type.llm import cleanup_text
 
     mock_ollama_chat.return_value.message.content = '"Dzisiaj byłem w sklepie."'
     result = cleanup_text("test", "pl")
@@ -65,7 +65,7 @@ def test_cleanup_strips_quotes_from_response(mock_ollama_chat):
 
 
 def test_unload_calls_chat_with_keep_alive_zero(mock_ollama_chat):
-    from wisprflow.llm import unload
+    from talk2type.llm import unload
 
     unload()
 
@@ -76,7 +76,7 @@ def test_unload_calls_chat_with_keep_alive_zero(mock_ollama_chat):
 
 
 def test_unload_swallows_exception(mock_ollama_chat):
-    from wisprflow.llm import unload
+    from talk2type.llm import unload
 
     mock_ollama_chat.side_effect = ConnectionError("no ollama")
     unload()  # should not raise

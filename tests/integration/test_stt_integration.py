@@ -5,7 +5,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_real_pl_transcription():
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     # Load a pre-recorded fixture or generate silence for smoke test

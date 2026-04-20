@@ -10,7 +10,7 @@ def mock_whisper_model():
 
 
 def test_lazy_load(mock_whisper_model):
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     # Constructor does NOT call WhisperModel
@@ -37,7 +37,7 @@ def test_lazy_load(mock_whisper_model):
 
 
 def test_transcribe_passes_language(mock_whisper_model):
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     instance = mock_whisper_model.return_value
@@ -59,7 +59,7 @@ def test_transcribe_passes_language(mock_whisper_model):
 
 
 def test_transcribe_concatenates_segments(mock_whisper_model):
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     instance = mock_whisper_model.return_value
@@ -74,7 +74,7 @@ def test_transcribe_concatenates_segments(mock_whisper_model):
 
 
 def test_unload_releases_model(mock_whisper_model):
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     instance = mock_whisper_model.return_value
@@ -93,7 +93,7 @@ def test_unload_releases_model(mock_whisper_model):
 
 
 def test_unload_when_not_loaded_is_noop(mock_whisper_model):
-    from wisprflow.stt import WhisperSTT
+    from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
     # unload on fresh instance should not raise

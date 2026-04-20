@@ -41,7 +41,7 @@ def mock_sd():
 
 
 def test_recorder_start_stop_returns_float32_mono(mock_sd):
-    from wisprflow.audio import Recorder
+    from talk2type.audio import Recorder
 
     sd_mod, holder = mock_sd
     rec = Recorder()
@@ -60,7 +60,7 @@ def test_recorder_start_stop_returns_float32_mono(mock_sd):
 
 
 def test_recorder_stop_without_start_returns_empty(mock_sd):
-    from wisprflow.audio import Recorder
+    from talk2type.audio import Recorder
 
     rec = Recorder()
     # Call stop without ever calling start — should return empty, not crash
@@ -71,7 +71,7 @@ def test_recorder_stop_without_start_returns_empty(mock_sd):
 
 
 def test_recorder_second_start_resets_queue(mock_sd):
-    from wisprflow.audio import Recorder
+    from talk2type.audio import Recorder
 
     sd_mod, holder = mock_sd
     rec = Recorder()

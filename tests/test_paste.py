@@ -4,7 +4,7 @@ from unittest.mock import patch
 @patch("wisprflow.paste.pyperclip")
 @patch("wisprflow.paste._kb")
 def test_paste_copies_then_ctrl_v(mock_kb, mock_pyperclip):
-    from wisprflow.paste import paste_text
+    from talk2type.paste import paste_text
 
     paste_text("hello")
 
@@ -18,7 +18,7 @@ def test_paste_copies_then_ctrl_v(mock_kb, mock_pyperclip):
 
 @patch("wisprflow.paste.pyperclip")
 def test_paste_empty_noop(mock_pyperclip):
-    from wisprflow.paste import paste_text
+    from talk2type.paste import paste_text
 
     paste_text("")
     mock_pyperclip.copy.assert_not_called()

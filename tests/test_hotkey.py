@@ -15,7 +15,7 @@ def callbacks():
 
 @pytest.fixture
 def listener(callbacks):
-    from wisprflow.hotkey import HotkeyListener
+    from talk2type.hotkey import HotkeyListener
 
     hl = HotkeyListener(
         on_pl_start=callbacks["pl_start"],

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 @patch("wisprflow.resource_mgr.win32api")
 @patch("wisprflow.resource_mgr.win32con")
 def test_fullscreen_detection_normal_window(mock_con, mock_api, mock_gui):
-    from wisprflow.resource_mgr import is_fullscreen
+    from talk2type.resource_mgr import is_fullscreen
 
     mock_gui.GetForegroundWindow.return_value = 123
     mock_gui.GetClassName.return_value = "Chrome_WidgetWin_1"
@@ -21,7 +21,7 @@ def test_fullscreen_detection_normal_window(mock_con, mock_api, mock_gui):
 @patch("wisprflow.resource_mgr.win32api")
 @patch("wisprflow.resource_mgr.win32con")
 def test_fullscreen_detection_true_fullscreen(mock_con, mock_api, mock_gui):
-    from wisprflow.resource_mgr import is_fullscreen
+    from talk2type.resource_mgr import is_fullscreen
 
     mock_gui.GetForegroundWindow.return_value = 456
     mock_gui.GetClassName.return_value = "ApplicationFrameWindow"
@@ -36,7 +36,7 @@ def test_fullscreen_detection_true_fullscreen(mock_con, mock_api, mock_gui):
 @patch("wisprflow.resource_mgr.win32api")
 @patch("wisprflow.resource_mgr.win32con")
 def test_fullscreen_skips_shell_classes(mock_con, mock_api, mock_gui):
-    from wisprflow.resource_mgr import is_fullscreen
+    from talk2type.resource_mgr import is_fullscreen
 
     mock_gui.GetForegroundWindow.return_value = 789
     mock_gui.GetClassName.return_value = "Progman"
@@ -48,7 +48,7 @@ def test_fullscreen_skips_shell_classes(mock_con, mock_api, mock_gui):
 
 
 def test_idle_triggers_unload():
-    from wisprflow.resource_mgr import ResourceManager
+    from talk2type.resource_mgr import ResourceManager
 
     on_unload = MagicMock()
     mgr = ResourceManager(on_unload=on_unload, idle_timeout_sec=0.2, poll_sec=0.05)
@@ -67,7 +67,7 @@ def test_idle_triggers_unload():
 
 @patch("wisprflow.resource_mgr.is_fullscreen", return_value=True)
 def test_fullscreen_triggers_unload(mock_fs):
-    from wisprflow.resource_mgr import ResourceManager
+    from talk2type.resource_mgr import ResourceManager
 
     on_unload = MagicMock()
     mgr = ResourceManager(on_unload=on_unload, idle_timeout_sec=10, poll_sec=0.05)
