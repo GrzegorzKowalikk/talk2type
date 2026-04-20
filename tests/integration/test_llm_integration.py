@@ -4,7 +4,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_real_cleanup_removes_fillers():
-    from wisprflow.llm import cleanup_text
+    from talk2type.llm import cleanup_text
 
     result = cleanup_text("dzisiaj eeee byłem yyyy w sklepie", "pl")
     assert "eeee" not in result

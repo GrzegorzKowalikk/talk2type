@@ -2,14 +2,14 @@ import logging
 import signal
 import sys
 
-from wisprflow.audio import Recorder
-from wisprflow.config import setup_logging
-from wisprflow.hotkey import HotkeyListener
-from wisprflow.llm import cleanup_text, unload as unload_llm
-from wisprflow.paste import paste_text
-from wisprflow.resource_mgr import ResourceManager
-from wisprflow.stt import WhisperSTT
-from wisprflow.tray import Tray
+from talk2type.audio import Recorder
+from talk2type.config import setup_logging
+from talk2type.hotkey import HotkeyListener
+from talk2type.llm import cleanup_text, unload as unload_llm
+from talk2type.paste import paste_text
+from talk2type.resource_mgr import ResourceManager
+from talk2type.stt import WhisperSTT
+from talk2type.tray import Tray
 
 log = logging.getLogger(__name__)
 
