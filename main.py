@@ -1,6 +1,7 @@
 import logging
 import signal
 import sys
+import time
 
 from talk2type.audio import Recorder
 from talk2type.config import setup_logging
@@ -70,8 +71,6 @@ class App:
         if hasattr(signal, "pause"):
             signal.pause()
         else:
-            import time
-
             time.sleep(1e9)
 
     def shutdown(self):
