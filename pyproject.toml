@@ -1,0 +1,24 @@
+[project]
+name = "own-wisprflow"
+version = "0.1.0"
+description = "Push-to-talk voice dictation — Whisper + LLM cleanup + paste"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "faster-whisper>=1.0.3",
+    "ollama>=0.3.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.26",
+    "pynput>=1.7.7",
+    "pyperclip>=1.9.0",
+    "pystray>=0.19.5",
+    "Pillow>=10.0",
+    "pywin32>=306",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-mock>=3.12"]
+
+[tool.pytest.ini_options]
+markers = ["integration: wymaga GPU+Ollama, pomijany w CI"]
+addopts = "-m 'not integration'"
