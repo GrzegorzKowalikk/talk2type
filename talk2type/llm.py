@@ -1,4 +1,5 @@
 import logging
+import time
 
 from ollama import chat
 
@@ -16,6 +17,7 @@ def cleanup_text(raw: str, language: str = "pl") -> str:
         return raw
     label_text, label_resp = _LABELS[language]
     try:
+        t0 = time.monotonic()
         response = chat(
             model=OLLAMA_MODEL,
             messages=[
@@ -29,6 +31,7 @@ def cleanup_text(raw: str, language: str = "pl") -> str:
             keep_alive="3m",
             options={"temperature": 0.1, "num_predict": 256},
         )
+        log.info("LLM call: %.2fs", time.monotonic() - t0)
         return response.message.content.strip().strip('"')
     except Exception:
         return raw
