@@ -1,7 +1,11 @@
+import logging
+
 from ollama import chat
 
 from .config import OLLAMA_MODEL
 from .prompts import SYSTEM_EN, SYSTEM_PL
+
+log = logging.getLogger(__name__)
 
 _PROMPTS = {"pl": SYSTEM_PL, "en": SYSTEM_EN}
 _LABELS = {"pl": ("Tekst", "Odpowiedź"), "en": ("Text", "Response")}
@@ -39,5 +43,6 @@ def unload():
             keep_alive=0,
             options={"num_predict": 1},
         )
+        log.info("LLM (%s) unloaded from Ollama", OLLAMA_MODEL)
     except Exception:
         pass

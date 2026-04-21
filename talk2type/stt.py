@@ -1,9 +1,13 @@
 import gc
+import logging
+import time
 
 import numpy as np
 from faster_whisper import WhisperModel
 
 from .config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_MODEL
+
+log = logging.getLogger(__name__)
 
 
 class WhisperSTT:
@@ -12,9 +16,11 @@ class WhisperSTT:
 
     def _ensure_loaded(self):
         if self._model is None:
+            t0 = time.monotonic()
             self._model = WhisperModel(
                 WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
             )
+            log.info("Whisper loaded (%s, %s) in %.1fs", WHISPER_MODEL, WHISPER_COMPUTE, time.monotonic() - t0)
 
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
         self._ensure_loaded()
@@ -28,3 +34,4 @@ class WhisperSTT:
             del self._model
             self._model = None
             gc.collect()
+            log.info("Whisper unloaded")

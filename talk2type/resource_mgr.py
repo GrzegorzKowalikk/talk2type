@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 
@@ -6,6 +7,8 @@ import win32con
 import win32gui
 
 from .config import FULLSCREEN_POLL_SEC, IDLE_TIMEOUT_SEC
+
+log = logging.getLogger(__name__)
 
 _SHELL_CLASSES = frozenset(("Progman", "WorkerW", "Shell_TrayWnd", "Button"))
 
@@ -48,6 +51,8 @@ class ResourceManager:
                 continue
             idle = time.monotonic() - self._last_activity
             if idle > self._idle_timeout or is_fullscreen():
+                reason = "fullscreen" if is_fullscreen() else f"idle {idle:.0f}s"
+                log.info("Unloading models (%s)", reason)
                 self._on_unload()
                 self._unloaded = True
 
