@@ -22,17 +22,17 @@ def install():
     link.SetPath(str(pythonw))
     link.SetArguments(f'"{main_py}"')
     link.SetWorkingDirectory(str(project_root))
-    link.SetDescription("own_wisprflow autostart")
+    link.SetDescription("talk2type autostart")
 
     startup = shell.SHGetFolderPath(0, shellcon.CSIDL_STARTUP, 0, 0)
-    target = os.path.join(startup, "own_wisprflow.lnk")
+    target = os.path.join(startup, "talk2type.lnk")
     link.QueryInterface(pythoncom.IID_IPersistFile).Save(target, 0)
     print(f"Installed: {target}")
 
 
 def uninstall():
     startup = shell.SHGetFolderPath(0, shellcon.CSIDL_STARTUP, 0, 0)
-    target = os.path.join(startup, "own_wisprflow.lnk")
+    target = os.path.join(startup, "talk2type.lnk")
     if os.path.exists(target):
         os.remove(target)
         print(f"Removed: {target}")
