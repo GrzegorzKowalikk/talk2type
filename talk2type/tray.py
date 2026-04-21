@@ -1,27 +1,23 @@
 import threading
+from pathlib import Path
 
 from PIL import Image
 from pystray import Icon, Menu, MenuItem
 
-
-def _img(color: str) -> Image.Image:
-    return Image.new("RGB", (64, 64), color)
+_IMAGES_DIR = Path(__file__).parent.parent / "images"
 
 
 class Tray:
-    COLORS = {"idle": "gray", "recording": "red", "processing": "orange"}
-
     def __init__(self, on_quit):
-        self._icons = {state: _img(color) for state, color in self.COLORS.items()}
         self._icon = Icon(
             "Talk2Type",
-            self._icons["idle"],
+            Image.open(_IMAGES_DIR / "icon.png"),
             "Talk2Type",
             Menu(MenuItem("Quit", lambda i, _: (on_quit(), i.stop()))),
         )
 
     def set_state(self, state: str):
-        self._icon.icon = self._icons.get(state, self._icons["idle"])
+        pass
 
     def run(self):
         threading.Thread(target=self._icon.run, daemon=True).start()

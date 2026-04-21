@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture
 def mock_ollama_chat():
-    with patch("wisprflow.llm.chat") as mock_chat:
+    with patch("talk2type.llm.chat") as mock_chat:
         response = MagicMock()
         response.message.content = "Dzisiaj byłem w sklepie."
         mock_chat.return_value = response

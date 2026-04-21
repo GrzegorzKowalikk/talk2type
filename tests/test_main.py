@@ -25,6 +25,7 @@ def app_with_mocks():
         app.tray = MockTray.return_value
         app.resmgr = MockResMgr.return_value
         app.hotkey = MockHotkey.return_value
+        app._overlay = stack.enter_context(patch("main.OverlayWindow")).return_value
         app._busy = False
         app._lang = "pl"
 
@@ -89,7 +90,7 @@ def test_unload_all_calls_both(app_with_mocks):
     app, mocks = app_with_mocks
 
     with patch("main.unload_llm") as mock_unload_llm:
-        app._unload_all()
+        app.unload_all()
 
     mocks["stt"].unload.assert_called_once()
     mock_unload_llm.assert_called_once()

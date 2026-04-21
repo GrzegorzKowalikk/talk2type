@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture
 def mock_whisper_model():
-    with patch("wisprflow.stt.WhisperModel") as WM:
+    with patch("talk2type.stt.WhisperModel") as WM:
         yield WM
 
 

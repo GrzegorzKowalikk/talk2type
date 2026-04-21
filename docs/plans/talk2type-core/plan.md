@@ -1,7 +1,8 @@
-# own_wisprflow — plan implementacji (core)
+# talk2type — plan implementacji (core)
 
 > Python-owy klon Wispr Flow dla Windows. Push-to-talk → Whisper → qwen3.5:2b → paste.
 > Stack zablokowany 2026-04-20. Plan tworzony per CLAUDE.md (docs-first, make-plan).
+> **Paczka przemianowana z `wisprflow` na `talk2type` (commit 2026-04-20).**
 
 ---
 
@@ -163,16 +164,19 @@ link.QueryInterface(pythoncom.IID_IPersistFile).Save(
 own_wisprflow/
 ├── main.py                      # orchestrator (glue)
 ├── pyproject.toml               # deps
-├── wisprflow/
+├── images/
+│   └── icon.png                 # tray icon (PNG)
+├── talk2type/
 │   ├── __init__.py
-│   ├── config.py                # stałe: modele, hotkeys, timeouts
-│   ├── audio.py                 # Recorder (push-to-talk)
-│   ├── stt.py                   # WhisperSTT (load/transcribe/unload)
-│   ├── llm.py                   # cleanup_text (ollama chat)
+│   ├── config.py                # stałe: modele, hotkeys, timeouts + setup_logging()
+│   ├── audio.py                 # Recorder (push-to-talk) + level_callback
+│   ├── stt.py                   # WhisperSTT (load/transcribe/unload) + logging
+│   ├── llm.py                   # cleanup_text (ollama chat) + timing log
 │   ├── paste.py                 # clipboard + Ctrl+V
 │   ├── hotkey.py                # pynput listener
-│   ├── tray.py                  # pystray icon + menu
-│   ├── resource_mgr.py          # idle timer + fullscreen detector
+│   ├── tray.py                  # pystray icon + menu (real PNG, set_state stub)
+│   ├── resource_mgr.py          # idle timer + fullscreen detector + logging
+│   ├── overlay.py               # PySide6 floating pill UI (recording/processing)
 │   └── prompts.py               # system prompts PL/EN
 ├── scripts/
 │   └── install_autostart.py     # tworzy .lnk w Startup
@@ -181,17 +185,18 @@ own_wisprflow/
 │   ├── test_stt.py
 │   ├── test_llm.py
 │   ├── test_resource_mgr.py
+│   ├── test_overlay.py
 │   └── fixtures/sample_pl.wav
-└── docs/plans/wisprflow-core/{plan.md,tests.md}
+└── docs/plans/talk2type-core/{plan.md,tests.md}
 ```
 
 ---
 
-## Phase 1 — Scaffolding + dependencies
+## Phase 1 — Scaffolding + dependencies ✅ DONE
 
 **Cel:** działający `uv sync` + importy wszystkich libów.
 
-1. **`pyproject.toml`** — dodać deps:
+1. **`pyproject.toml`** — deps (PySide6 dodane dla overlay):
    ```toml
    [project]
    name = "own_wisprflow"
@@ -207,13 +212,14 @@ own_wisprflow/
        "pystray>=0.19.5",
        "Pillow>=10.0",
        "pywin32>=306",
+       "PySide6",
    ]
 
    [dependency-groups]
    dev = ["pytest>=8", "pytest-mock>=3.12"]
    ```
-2. **Utwórz puste moduły** (`wisprflow/*.py` z `# TODO`, tylko żeby importy przeszły).
-3. **`wisprflow/config.py`** — stałe:
+2. **Utwórz puste moduły** (`talk2type/*.py` z `# TODO`, tylko żeby importy przeszły).
+3. **`talk2type/config.py`** — stałe:
    ```python
    WHISPER_MODEL = "turbo"
    WHISPER_COMPUTE = "int8_float16"
@@ -233,17 +239,17 @@ own_wisprflow/
    ```
 
 **Weryfikacja:**
-- [ ] `uv sync` przechodzi bez błędów
-- [ ] `uv run python -c "import faster_whisper, ollama, sounddevice, pynput, pyperclip, pystray, win32gui"` → brak błędów
-- [ ] `uv run pytest --collect-only` → 0 testów, 0 errors
+- [x] `uv sync` przechodzi bez błędów
+- [x] `uv run python -c "import faster_whisper, ollama, sounddevice, pynput, pyperclip, pystray, win32gui, PySide6"` → brak błędów
+- [x] `uv run pytest --collect-only` → testy zbierane, 0 errors
 
 ---
 
-## Phase 2 — Audio capture (push-to-talk)
+## Phase 2 — Audio capture (push-to-talk) ✅ DONE
 
 **Cel:** klasa `Recorder` która startuje/stopuje nagrywanie i zwraca `np.float32` mono 16 kHz.
 
-**Implementacja (`wisprflow/audio.py`):**
+**Implementacja (`talk2type/audio.py`):**
 ```python
 import sounddevice as sd
 import numpy as np
@@ -278,8 +284,8 @@ class Recorder:
 ```
 
 **Weryfikacja:**
-- [ ] `tests/test_audio.py`: mock `sd.InputStream`, sprawdź że start/stop poprawnie kolejkują chunki i zwracają płaską tablicę float32.
-- [ ] Ręczny smoke: `python -c "from wisprflow.audio import Recorder; r=Recorder(); r.start(); import time; time.sleep(2); a=r.stop(); print(a.shape, a.dtype)"` → shape ok 32000, dtype float32.
+- [x] `tests/test_audio.py`: mock `sd.InputStream`, sprawdź że start/stop poprawnie kolejkują chunki i zwracają płaską tablicę float32.
+- [x] Ręczny smoke: `python -c "from talk2type.audio import Recorder; r=Recorder(); r.start(); import time; time.sleep(2); a=r.stop(); print(a.shape, a.dtype)"` → shape ok 32000, dtype float32.
 
 **Anti-patterns:**
 - Nie używaj `sd.rec(duration, ...)` — wymaga znanej długości, nie pasuje do push-to-talk.
@@ -287,11 +293,11 @@ class Recorder:
 
 ---
 
-## Phase 3 — STT wrapper (lazy load + explicit unload)
+## Phase 3 — STT wrapper (lazy load + explicit unload) ✅ DONE
 
 **Cel:** `WhisperSTT` ładuje model przy pierwszym użyciu, trzyma w VRAM do `unload()`.
 
-**Implementacja (`wisprflow/stt.py`):**
+**Implementacja (`talk2type/stt.py`):**
 ```python
 import gc
 import numpy as np
@@ -323,8 +329,8 @@ class WhisperSTT:
 ```
 
 **Weryfikacja:**
-- [ ] Unit test z mockowanym `WhisperModel` — sprawdź lazy-load (model None przed wołaniem `transcribe`), unload (None po wołaniu `unload`).
-- [ ] Smoke test na pliku WAV: nagraj 5s "to jest test", `transcribe(audio, "pl")` → coś sensownego. Target latency na RTX 2060 Super: <500 ms po pierwszym warm-upie dla 5s audio.
+- [x] Unit test z mockowanym `WhisperModel` — sprawdź lazy-load (model None przed wołaniem `transcribe`), unload (None po wołaniu `unload`).
+- [x] Smoke test na pliku WAV: nagraj 5s "to jest test", `transcribe(audio, "pl")` → coś sensownego. Target latency na RTX 2060 Super: <500 ms po pierwszym warm-upie dla 5s audio.
 
 **Anti-patterns:**
 - Nie ładuj modelu w `__init__` — to blokuje start aplikacji na kilka sekund.
@@ -332,11 +338,11 @@ class WhisperSTT:
 
 ---
 
-## Phase 4 — LLM cleanup (ollama + think=False + keep_alive="3m")
+## Phase 4 — LLM cleanup (ollama + think=False + keep_alive="3m") ✅ DONE
 
 **Cel:** `cleanup_text(raw, language)` zwraca oczyszczony tekst; model trzyma się w pamięci 3 min (keep_alive="3m"), dopasowując się do cyklu ResourceManager. Funkcja `unload()` wymusza zwolnienie (keep_alive=0) — wołana przez ResourceManager przy idle/fullscreen.
 
-**Implementacja (`wisprflow/prompts.py`):**
+**Implementacja (`talk2type/prompts.py`):**
 ```python
 SYSTEM_PL = """Poprawiasz transkrypcje mowy. Zwracasz TYLKO poprawiony tekst.
 
@@ -359,7 +365,7 @@ Input: "today uh i went umm to the store and bought bread"
 Output: Today I went to the store and bought bread."""
 ```
 
-**Implementacja (`wisprflow/llm.py`):**
+**Implementacja (`talk2type/llm.py`):**
 ```python
 from ollama import chat
 from .config import OLLAMA_MODEL
@@ -402,9 +408,9 @@ def unload():
 ```
 
 **Weryfikacja:**
-- [ ] Unit test z mockowanym `ollama.chat` — sprawdź że `think=False` i `keep_alive="3m"` są w kwargs.
-- [ ] Unit test że `unload()` woła `chat` z `keep_alive=0`.
-- [ ] Integration test (wymaga działającej Ollamy): `cleanup_text("dzisiaj eee byłem w sklepie")` → coś zbliżonego do "Dzisiaj byłem w sklepie.".
+- [x] Unit test z mockowanym `ollama.chat` — sprawdź że `think=False` i `keep_alive="3m"` są w kwargs.
+- [x] Unit test że `unload()` woła `chat` z `keep_alive=0`.
+- [x] Integration test (wymaga działającej Ollamy): `cleanup_text("dzisiaj eee byłem w sklepie")` → coś zbliżonego do "Dzisiaj byłem w sklepie.".
 - [ ] Latency test: drugi call po pierwszym → <1s (warm).
 
 **Anti-patterns:**
@@ -413,11 +419,11 @@ def unload():
 
 ---
 
-## Phase 5 — Hotkey listener + paste
+## Phase 5 — Hotkey listener + paste ✅ DONE
 
 **DECISION RESOLVED:** Wybrano `F9` = PL, `F10` = EN. Oryginalny design (Alt_R/Ctrl_R) miał AltGr conflict na polskiej klawiaturze — AltGr emituje Ctrl_L+Alt_R razem. F9/F10 jest niezawodne i bezkolizyjne.
 
-**Implementacja (`wisprflow/hotkey.py`):**
+**Implementacja (`talk2type/hotkey.py`):**
 ```python
 from pynput import keyboard
 from pynput.keyboard import Key
@@ -457,7 +463,7 @@ class HotkeyListener:
             self._listener.stop()
 ```
 
-**Implementacja (`wisprflow/paste.py`):**
+**Implementacja (`talk2type/paste.py`):**
 ```python
 import pyperclip
 from pynput.keyboard import Controller, Key
@@ -473,8 +479,8 @@ def paste_text(text: str):
 ```
 
 **Weryfikacja:**
-- [ ] Smoke test hotkey: trzymaj F9 2s → odpali pl_start, po puszczeniu pl_stop. Analogicznie F10 = EN.
-- [ ] Paste test: `paste_text("test ąęść")` w otwartym Notatniku → poprawne polskie znaki.
+- [x] Smoke test hotkey: trzymaj F9 2s → odpali pl_start, po puszczeniu pl_stop. Analogicznie F10 = EN.
+- [x] Paste test: `paste_text("test ąęść")` w otwartym Notatniku → poprawne polskie znaki.
 
 **Anti-patterns:**
 - Nie rób paste'a przez `pynput.Controller().type(text)` — znacząco wolniejsze dla długich tekstów niż Ctrl+V.
@@ -482,30 +488,30 @@ def paste_text(text: str):
 
 ---
 
-## Phase 6 — Orchestrator + tray + resource manager
+## Phase 6 — Orchestrator + tray + resource manager ✅ DONE
 
-**Cel:** wszystko sklejone. Tray pokazuje stan (idle/recording/processing). Po 3 min bez aktywności LUB gdy wykryto fullscreen → unload STT+LLM (oba modele przez `_unload_all`).
+**Cel:** wszystko sklejone. Overlay pokazuje stan nagrywania (PySide6 pill widget). Po 3 min bez aktywności LUB gdy wykryto fullscreen → unload STT+LLM przez `unload_all`.
 
-**Implementacja (`wisprflow/tray.py`):**
+**Implementacja (`talk2type/tray.py`) — aktualna:**
 ```python
 import threading
+from pathlib import Path
 from pystray import Icon, Menu, MenuItem
 from PIL import Image
 
-def _img(color: str) -> Image.Image:
-    return Image.new("RGB", (64, 64), color)
+_IMAGES_DIR = Path(__file__).parent.parent / "images"
 
 class Tray:
-    COLORS = {"idle": "gray", "recording": "red", "processing": "orange"}
-
     def __init__(self, on_quit):
         self._icon = Icon(
-            "wisprflow", _img("gray"), "own_wisprflow",
+            "Talk2Type",
+            Image.open(_IMAGES_DIR / "icon.png"),
+            "Talk2Type",
             Menu(MenuItem("Quit", lambda i, _: (on_quit(), i.stop()))),
         )
 
     def set_state(self, state: str):
-        self._icon.icon = _img(self.COLORS.get(state, "gray"))
+        pass   # stub — stan wizualny obsługuje overlay
 
     def run(self):
         threading.Thread(target=self._icon.run, daemon=True).start()
@@ -513,8 +519,9 @@ class Tray:
     def stop(self):
         self._icon.stop()
 ```
+> **Uwaga:** `set_state` jest stubem — overlay.py przejął odpowiedzialność za stan wizualny.
 
-**Implementacja (`wisprflow/resource_mgr.py`):**
+**Implementacja (`talk2type/resource_mgr.py`):**
 ```python
 import threading, time
 import win32gui, win32api, win32con
@@ -559,44 +566,44 @@ class ResourceManager:
         self._stop_evt.set()
 ```
 
-**Implementacja (`main.py`):**
+**Implementacja (`main.py`) — aktualna:**
 ```python
-import logging
-import signal, sys
-from wisprflow.audio import Recorder
-from wisprflow.config import setup_logging
-from wisprflow.stt import WhisperSTT
-from wisprflow.llm import cleanup_text, unload as unload_llm
-from wisprflow.paste import paste_text
-from wisprflow.hotkey import HotkeyListener
-from wisprflow.tray import Tray
-from wisprflow.resource_mgr import ResourceManager
-
-log = logging.getLogger(__name__)
+import logging, signal, sys, time
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from talk2type.audio import Recorder
+from talk2type.config import setup_logging
+from talk2type.hotkey import HotkeyListener
+from talk2type.llm import cleanup_text, unload as unload_llm
+from talk2type.overlay import OverlayWindow
+from talk2type.paste import paste_text
+from talk2type.resource_mgr import ResourceManager
+from talk2type.stt import WhisperSTT
+from talk2type.tray import Tray
 
 class App:
     def __init__(self):
         setup_logging()
+        self._qt = QApplication(sys.argv)
+        self._overlay = OverlayWindow()
         self.recorder = Recorder()
         self.stt = WhisperSTT()
         self.tray = Tray(on_quit=self.shutdown)
-        self.resmgr = ResourceManager(on_unload=self._unload_all)
+        self.resmgr = ResourceManager(on_unload=self.unload_all)
         self.hotkey = HotkeyListener(
-            on_pl_start=lambda: self._start("pl"),
-            on_pl_stop=lambda: self._stop("pl"),
-            on_en_start=lambda: self._start("en"),
-            on_en_stop=lambda: self._stop("en"),
+            on_pl_start=lambda: self._start("pl"), on_pl_stop=lambda: self._stop("pl"),
+            on_en_start=lambda: self._start("en"), on_en_stop=lambda: self._stop("en"),
         )
         self._busy = False
 
-    def _unload_all(self):
-        self.stt.unload()
-        unload_llm()
+    def unload_all(self):          # public — wołane przez ResourceManager i shutdown
+        self.stt.unload(); unload_llm()
 
     def _start(self, lang):
         if self._busy: return
         self.tray.set_state("recording")
-        self.recorder.start()
+        self._overlay.request_recording(lang)
+        self.recorder.start(level_callback=self._overlay.push_rms)
         self._lang = lang
 
     def _stop(self, lang):
@@ -604,45 +611,72 @@ class App:
         self._busy = True
         audio = self.recorder.stop()
         self.tray.set_state("processing")
+        self._overlay.request_processing()
         try:
-            if audio.size < 1600:   # <0.1s = accidental tap
-                return
+            if audio.size < 1600: return
             raw = self.stt.transcribe(audio, language=lang)
             self.resmgr.mark_activity()
             cleaned = cleanup_text(raw, language=lang)
             paste_text(cleaned)
         finally:
             self.tray.set_state("idle")
+            self._overlay.request_hide()
             self._busy = False
 
     def run(self):
-        self.tray.run()
-        self.resmgr.start()
-        self.hotkey.start()
+        self.tray.run(); self.resmgr.start(); self.hotkey.start()
         signal.signal(signal.SIGINT, lambda *_: self.shutdown())
-        signal.pause() if hasattr(signal, "pause") else __import__("time").sleep(1e9)
+        sigint_timer = QTimer(); sigint_timer.start(200)
+        sigint_timer.timeout.connect(lambda: None)
+        self._qt.exec(); sys.exit(0)
 
     def shutdown(self):
-        self.hotkey.stop(); self.resmgr.stop(); self.stt.unload()
-        sys.exit(0)
-
-if __name__ == "__main__":
-    App().run()
+        self.hotkey.stop(); self.resmgr.stop(); self.unload_all()
+        self._qt.quit(); sys.exit(0)
 ```
+> **Kluczowe zmiany vs. plan:** `QApplication.exec()` zamiast `time.sleep(1e9)` (Windows nie ma `signal.pause()`); `unload_all` publiczna; overlay zintegrowany z `_start`/`_stop`; `level_callback` do waveform.
 
 **Weryfikacja:**
-- [ ] E2E manual: `uv run python main.py` → tray widoczny, nagrywanie działa, PL i EN wkleja.
+- [x] E2E manual: `uv run python main.py` → tray widoczny, overlay pojawia się przy nagrywaniu, PL i EN wkleja.
 - [ ] Idle test: zostaw 3+ min bez aktywności → sprawdź `nvidia-smi` że Whisper zwolnił VRAM.
 - [ ] Fullscreen test: uruchom grę / F11 w Chrome → unload odpali w <10s.
-- [ ] Quit z trayu → proces kończy się czysto (brak zombie ollama keep_alive).
+- [x] Quit z trayu → proces kończy się czysto (brak zombie ollama keep_alive).
 
 **Anti-patterns:**
 - Nie blokuj głównego wątku na `icon.run()`.
-- `signal.pause()` nie istnieje na Windows — użyj `time.sleep(1e9)` albo `threading.Event().wait()`.
+- `signal.pause()` nie istnieje na Windows — Qt event loop (`self._qt.exec()`) jest właściwym rozwiązaniem.
+- Nie rób `_unload_all` prywatnej — ResourceManager musi ją wołać przez `on_unload` callback.
 
 ---
 
-## Phase 7 — Auto-start (Windows Startup folder)
+## Phase 6b — Overlay UI (PySide6 pill widget) ✅ DONE
+
+**Cel:** floating pill widget na dole ekranu, pokazuje stan nagrywania (waveform bars) i processing.
+
+**Implementacja (`talk2type/overlay.py`)** — PySide6 `QWidget` z:
+- `FramelessWindowHint | Tool | WA_TranslucentBackground` → brak obramowania, przezroczyste tło
+- DWM attributes via `ctypes.windll.dwmapi` → usunięcie Windows shadow/border (Windows 11)
+- Wewnętrzne Signals (`_Signals(QObject)`) → thread-safe API (`request_recording`, `request_processing`, `request_hide`)
+- `push_rms(float)` → aktualizuje waveform deque (44 bary × 50ms refresh)
+- Fade-out animacja przy ukrywaniu (16ms timer, alpha -= 20)
+
+**Public API (thread-safe, wołane z wątku hotkey):**
+```python
+overlay.request_recording(lang: str)   # pokazuje pill + waveform
+overlay.request_processing()            # przechodzi do "Processing..."
+overlay.request_hide()                  # fade-out i ukrycie
+overlay.push_rms(rms: float)           # aktualizuje waveform (z audio callback)
+```
+
+**Weryfikacja:**
+- [x] Overlay pojawia się przy F9/F10 na dole ekranu
+- [x] Waveform reaguje na głos (bars ruszają się)
+- [x] "Processing..." wyświetla się między stop a paste
+- [x] Fade-out po wklejeniu
+
+---
+
+## Phase 7 — Auto-start (Windows Startup folder) ✅ DONE
 
 **Cel:** script `scripts/install_autostart.py` → tworzy `.lnk` w Startup folderze.
 
@@ -700,18 +734,18 @@ if __name__ == "__main__":
 
 1. **Grep anti-patterns:**
    ```bash
-   grep -rn "large-v3-turbo" wisprflow/    # powinno być puste
-   grep -rn "empty_cache" wisprflow/       # powinno być puste
-   grep -rn "Key.alt_gr" wisprflow/        # powinno być puste
-   grep -rn "options.*think" wisprflow/    # powinno być puste
-   grep -rn "alt_r\|ctrl_r" wisprflow/hotkey.py  # powinno być puste (F9/F10)
+   grep -rn "large-v3-turbo" talk2type/    # powinno być puste
+   grep -rn "empty_cache" talk2type/       # powinno być puste
+   grep -rn "Key.alt_gr" talk2type/        # powinno być puste
+   grep -rn "options.*think" talk2type/    # powinno być puste
+   grep -rn "alt_r\|ctrl_r" talk2type/hotkey.py  # powinno być puste (F9/F10)
    ```
 2. **Latency benchmark:** 10× push-to-talk 3s audio → zmierz średni czas end-to-end. Target: <1.2 s warm.
 3. **VRAM benchmark:** `nvidia-smi` przed/po nagrywaniu; po 3 min idle → powinno wrócić do bazowego.
 4. **Polish quality spot-check:** 5 próbek z wypełniaczami → LLM powinien usunąć eeee/yyyy/aaaa w każdej.
 5. **Full `pytest` pass:**
    ```bash
-   uv run pytest -q
+   uv run pytest -q --cov=talk2type
    ```
 6. **`lint-and-validate` skill** — po całości.
 

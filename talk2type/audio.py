@@ -14,13 +14,19 @@ class Recorder:
         self._q: queue.Queue | None = None
         self._stream = None
 
-    def start(self):
+    def start(self, level_callback=None):
         self._q = queue.Queue()
+
+        def _cb(indata, frames, t, status):
+            self._q.put(indata.copy())
+            if level_callback:
+                level_callback(float(np.sqrt(np.mean(indata ** 2))))
+
         self._stream = sd.InputStream(
             samplerate=self.sample_rate,
             channels=self.channels,
             dtype=self.dtype,
-            callback=lambda indata, frames, t, status: self._q.put(indata.copy()),
+            callback=_cb,
         )
         self._stream.start()
 

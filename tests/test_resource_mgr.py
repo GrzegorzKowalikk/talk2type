@@ -2,9 +2,9 @@ import time
 from unittest.mock import MagicMock, patch
 
 
-@patch("wisprflow.resource_mgr.win32gui")
-@patch("wisprflow.resource_mgr.win32api")
-@patch("wisprflow.resource_mgr.win32con")
+@patch("talk2type.resource_mgr.win32gui")
+@patch("talk2type.resource_mgr.win32api")
+@patch("talk2type.resource_mgr.win32con")
 def test_fullscreen_detection_normal_window(mock_con, mock_api, mock_gui):
     from talk2type.resource_mgr import is_fullscreen
 
@@ -17,9 +17,9 @@ def test_fullscreen_detection_normal_window(mock_con, mock_api, mock_gui):
     assert is_fullscreen() is False
 
 
-@patch("wisprflow.resource_mgr.win32gui")
-@patch("wisprflow.resource_mgr.win32api")
-@patch("wisprflow.resource_mgr.win32con")
+@patch("talk2type.resource_mgr.win32gui")
+@patch("talk2type.resource_mgr.win32api")
+@patch("talk2type.resource_mgr.win32con")
 def test_fullscreen_detection_true_fullscreen(mock_con, mock_api, mock_gui):
     from talk2type.resource_mgr import is_fullscreen
 
@@ -32,9 +32,9 @@ def test_fullscreen_detection_true_fullscreen(mock_con, mock_api, mock_gui):
     assert is_fullscreen() is True
 
 
-@patch("wisprflow.resource_mgr.win32gui")
-@patch("wisprflow.resource_mgr.win32api")
-@patch("wisprflow.resource_mgr.win32con")
+@patch("talk2type.resource_mgr.win32gui")
+@patch("talk2type.resource_mgr.win32api")
+@patch("talk2type.resource_mgr.win32con")
 def test_fullscreen_skips_shell_classes(mock_con, mock_api, mock_gui):
     from talk2type.resource_mgr import is_fullscreen
 
@@ -52,7 +52,7 @@ def test_idle_triggers_unload():
 
     on_unload = MagicMock()
     mgr = ResourceManager(on_unload=on_unload, idle_timeout_sec=0.2, poll_sec=0.05)
-    with patch("wisprflow.resource_mgr.is_fullscreen", return_value=False):
+    with patch("talk2type.resource_mgr.is_fullscreen", return_value=False):
         mgr.start()
         mgr.mark_activity()
         time.sleep(0.35)
@@ -65,7 +65,7 @@ def test_idle_triggers_unload():
     assert on_unload.call_count == 1
 
 
-@patch("wisprflow.resource_mgr.is_fullscreen", return_value=True)
+@patch("talk2type.resource_mgr.is_fullscreen", return_value=True)
 def test_fullscreen_triggers_unload(mock_fs):
     from talk2type.resource_mgr import ResourceManager
 

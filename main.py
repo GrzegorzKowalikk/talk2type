@@ -3,10 +3,14 @@ import signal
 import sys
 import time
 
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+
 from talk2type.audio import Recorder
 from talk2type.config import setup_logging
 from talk2type.hotkey import HotkeyListener
 from talk2type.llm import cleanup_text, unload as unload_llm
+from talk2type.overlay import OverlayWindow
 from talk2type.paste import paste_text
 from talk2type.resource_mgr import ResourceManager
 from talk2type.stt import WhisperSTT
@@ -18,6 +22,8 @@ log = logging.getLogger(__name__)
 class App:
     def __init__(self):
         setup_logging()
+        self._qt = QApplication(sys.argv)
+        self._overlay = OverlayWindow()
         self.recorder = Recorder()
         self.stt = WhisperSTT()
         self.tray = Tray(on_quit=self.shutdown)
@@ -39,7 +45,8 @@ class App:
         if self._busy:
             return
         self.tray.set_state("recording")
-        self.recorder.start()
+        self._overlay.request_recording(lang)
+        self.recorder.start(level_callback=self._overlay.push_rms)
         self._lang = lang
         log.info("Recording started [%s]", lang)
 
@@ -50,6 +57,7 @@ class App:
         audio = self.recorder.stop()
         t0 = time.monotonic()
         self.tray.set_state("processing")
+        self._overlay.request_processing()
         try:
             if audio.size < 1600:
                 log.info("Short audio (%d samples) — skipping", audio.size)
@@ -63,6 +71,7 @@ class App:
             log.info("Pipeline: %.2fs", time.monotonic() - t0)
         finally:
             self.tray.set_state("idle")
+            self._overlay.request_hide()
             self._busy = False
 
     def run(self):
@@ -70,16 +79,18 @@ class App:
         self.resmgr.start()
         self.hotkey.start()
         signal.signal(signal.SIGINT, lambda *_: self.shutdown())
-        if hasattr(signal, "pause"):
-            signal.pause()
-        else:
-            time.sleep(1e9)
+        sigint_timer = QTimer()
+        sigint_timer.start(200)
+        sigint_timer.timeout.connect(lambda: None)
+        self._qt.exec()
+        sys.exit(0)
 
     def shutdown(self):
         log.info("Shutting down")
         self.hotkey.stop()
         self.resmgr.stop()
         self.unload_all()
+        self._qt.quit()
         sys.exit(0)
 
 

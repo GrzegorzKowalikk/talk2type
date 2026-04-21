@@ -27,7 +27,7 @@ class FakeStream:
 
 @pytest.fixture
 def mock_sd():
-    with patch("wisprflow.audio.sd") as sd_mod:
+    with patch("talk2type.audio.sd") as sd_mod:
         stream_holder = {}
 
         def make_stream(*a, **kw):
@@ -88,3 +88,21 @@ def test_recorder_second_start_resets_queue(mock_sd):
     holder["stream"]
     audio2 = rec.stop()
     assert audio2.size == 0  # empty, not stale data from first session
+
+
+def test_level_callback_receives_rms(mock_sd):
+    from talk2type.audio import Recorder
+
+    sd_mod, holder = mock_sd
+    levels = []
+    rec = Recorder()
+    rec.start(level_callback=levels.append)
+
+    stream = holder["stream"]
+    stream.push_chunk(512)
+    stream.push_chunk(512)
+
+    assert len(levels) == 2
+    for v in levels:
+        assert isinstance(v, float)
+        assert 0.0 <= v <= 1.0 or v > 0  # RMS is non-negative

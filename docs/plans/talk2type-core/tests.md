@@ -1,4 +1,4 @@
-# own_wisprflow — plan testów (TDD driver)
+# talk2type — plan testów (TDD driver)
 
 > Per CLAUDE.md Phase 2 — piszemy testy PRZED implementacją. Ten dokument pilotuje RED→GREEN→REFACTOR.
 
@@ -64,7 +64,7 @@ addopts = "-m 'not integration'"
 
 ## Phase 4 — llm
 
-### `test_llm.py::test_cleanup_calls_chat_with_think_false_and_keep_alive_3m`
+### `test_llm.py::test_cleanup_calls_chat_with_think_false_and_keep_alive_3m` ✅
 - Mockuj `ollama.chat`. Sprawdź że kwargs zawierają: `think=False`, `keep_alive="3m"`, `model="qwen3.5:2b"`.
 - **Krytyczne:** `think` i `keep_alive` są **top-level**, nie w `options`. Test sprawdza `call.kwargs["think"] == False` (a nie `call.kwargs["options"]["think"]`).
 
@@ -151,6 +151,21 @@ addopts = "-m 'not integration'"
 
 ---
 
+## Phase 6b — overlay
+
+### `test_overlay.py::test_request_recording_emits_signal`
+- Mockuj Qt signals. `overlay.request_recording("pl")` → `start_recording.emit("PL")` zawołany.
+
+### `test_overlay.py::test_push_rms_updates_deque`
+- `push_rms(0.5)` → deque zawiera wartość ≤ 1.0.
+
+### `test_overlay.py::test_request_hide_emits_signal`
+- `overlay.request_hide()` → `do_hide.emit()` zawołany.
+
+> **Uwaga:** testy overlay wymagają `QApplication` w fixture lub `pytest-qt`. Główne zachowanie wizualne jest testowane manualnie (E2E).
+
+---
+
 ## Phase 7 — autostart (smoke only, nie unit)
 
 ### `test_install_autostart.py::test_install_creates_lnk` (smoke, Windows-only)
@@ -199,5 +214,5 @@ uv run pytest -q -m "integration or not integration"
 uv run pytest tests/test_stt.py -v
 
 # Coverage:
-uv run pytest --cov=wisprflow --cov-report=term-missing
+uv run pytest --cov=talk2type --cov-report=term-missing
 ```
