@@ -48,6 +48,7 @@ class App:
             return
         self._busy = True
         audio = self.recorder.stop()
+        t0 = time.monotonic()
         self.tray.set_state("processing")
         try:
             if audio.size < 1600:
@@ -59,6 +60,7 @@ class App:
             cleaned = cleanup_text(raw, language=lang)
             log.info("LLM: %s", cleaned)
             paste_text(cleaned)
+            log.info("Pipeline: %.2fs", time.monotonic() - t0)
         finally:
             self.tray.set_state("idle")
             self._busy = False

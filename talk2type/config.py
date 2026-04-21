@@ -21,9 +21,15 @@ FULLSCREEN_POLL_SEC = 5
 def setup_logging():
     log_dir = Path(__file__).resolve().parent.parent / "logs"
     log_dir.mkdir(exist_ok=True)
-    logging.basicConfig(
-        filename=log_dir / "wisprflow.log",
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s: %(message)s",
         datefmt="%H:%M:%S",
+    )
+    file_handler = logging.FileHandler(log_dir / "wisprflow.log")
+    file_handler.setFormatter(fmt)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(fmt)
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[file_handler, console_handler],
     )
