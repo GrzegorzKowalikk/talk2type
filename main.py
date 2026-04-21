@@ -21,7 +21,7 @@ class App:
         self.recorder = Recorder()
         self.stt = WhisperSTT()
         self.tray = Tray(on_quit=self.shutdown)
-        self.resmgr = ResourceManager(on_unload=self._unload_all)
+        self.resmgr = ResourceManager(on_unload=self.unload_all)
         self.hotkey = HotkeyListener(
             on_pl_start=lambda: self._start("pl"),
             on_pl_stop=lambda: self._stop("pl"),
@@ -31,7 +31,7 @@ class App:
         self._busy = False
         log.info("App initialized — F9=PL, F10=EN")
 
-    def _unload_all(self):
+    def unload_all(self):
         self.stt.unload()
         unload_llm()
 
@@ -79,7 +79,7 @@ class App:
         log.info("Shutting down")
         self.hotkey.stop()
         self.resmgr.stop()
-        self.stt.unload()
+        self.unload_all()
         sys.exit(0)
 
 

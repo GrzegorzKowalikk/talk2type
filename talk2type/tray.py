@@ -14,9 +14,9 @@ class Tray:
     def __init__(self, on_quit):
         self._icons = {state: _img(color) for state, color in self.COLORS.items()}
         self._icon = Icon(
-            "wisprflow",
+            "Talk2Type",
             self._icons["idle"],
-            "own_wisprflow",
+            "Talk2Type",
             Menu(MenuItem("Quit", lambda i, _: (on_quit(), i.stop()))),
         )
 
