@@ -5,7 +5,7 @@ import time
 import numpy as np
 from faster_whisper import WhisperModel
 
-from .config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_MODEL
+from .config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_HOTWORDS, WHISPER_MODEL
 
 log = logging.getLogger(__name__)
 
@@ -24,8 +24,10 @@ class WhisperSTT:
 
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
         self._ensure_loaded()
+        initial_prompt = ", ".join(WHISPER_HOTWORDS) if WHISPER_HOTWORDS else None
         segments, _info = self._model.transcribe(
-            audio, language=language, beam_size=5, vad_filter=True
+            audio, language=language, beam_size=5, vad_filter=True,
+            initial_prompt=initial_prompt,
         )
         return "".join(seg.text for seg in segments).strip()
 

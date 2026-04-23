@@ -5,6 +5,13 @@ WHISPER_MODEL = "turbo"
 WHISPER_COMPUTE = "int8_float16"
 WHISPER_DEVICE = "cuda"
 
+# Words Whisper often mishears — listed here so beam search favours correct spelling.
+WHISPER_HOTWORDS = [
+    "Claude",
+    "Claude Code",
+    "Anthropic",
+]
+
 OLLAMA_MODEL = "qwen3.5:2b"
 
 SAMPLE_RATE = 16000
