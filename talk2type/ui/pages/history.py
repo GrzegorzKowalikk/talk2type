@@ -18,6 +18,7 @@ from sqlmodel import select
 
 from talk2type.db.engine import get_session
 from talk2type.db.model import Transcription
+from talk2type.ui.detail_dialog import TranscriptionDetailDialog
 
 DARK_BG = "#1e1e2e"
 DARKER_BG = "#11111b"
@@ -73,6 +74,50 @@ QListWidget::item:hover {{
 QListWidget::item:selected {{
     background-color: {SELECTED};
 }}
+QScrollBar:vertical {{
+    background: {DARK_BG};
+    width: 8px;
+    border-radius: 4px;
+    margin: 0;
+}}
+QScrollBar::handle:vertical {{
+    background: {SELECTED};
+    border-radius: 4px;
+    min-height: 24px;
+}}
+QScrollBar::handle:vertical:hover {{
+    background: {ACCENT};
+}}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {{
+    height: 0;
+}}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {{
+    background: none;
+}}
+QScrollBar:horizontal {{
+    background: {DARK_BG};
+    height: 8px;
+    border-radius: 4px;
+    margin: 0;
+}}
+QScrollBar::handle:horizontal {{
+    background: {SELECTED};
+    border-radius: 4px;
+    min-width: 24px;
+}}
+QScrollBar::handle:horizontal:hover {{
+    background: {ACCENT};
+}}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {{
+    width: 0;
+}}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {{
+    background: none;
+}}
 """
 
 
@@ -103,8 +148,10 @@ class HistoryPage(QWidget):
         # Transcription list
         self._list = QListWidget()
         self._list.setObjectName("transcription_list")
+        self._list.setWordWrap(True)
         self._list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._list.customContextMenuRequested.connect(self._show_context_menu)
+        self._list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self._list)
 
     # --- Public API ---
@@ -213,3 +260,10 @@ class HistoryPage(QWidget):
                 session.delete(obj)
         self.refresh_data()
         self._filter(self._search.text())
+
+    def _on_item_clicked(self, item: QListWidgetItem) -> None:
+        row_id = item.data(_ID_ROLE)
+        if row_id is None:
+            return
+        dlg = TranscriptionDetailDialog(row_id, parent=self)
+        dlg.exec()

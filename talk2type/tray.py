@@ -11,7 +11,7 @@ class Tray:
     def __init__(self, on_quit, *, on_open=None):
         menu_items = []
         if on_open is not None:
-            menu_items.append(MenuItem("Open", lambda i, _: on_open()))
+            menu_items.append(MenuItem("Open", lambda i, _: on_open(), default=True))
         menu_items.append(MenuItem("Quit", lambda i, _: (on_quit(), i.stop())))
         self._icon = Icon(
             "Talk2Type",

@@ -14,6 +14,9 @@ from sqlmodel import select
 
 from talk2type.db.engine import get_session
 from talk2type.db.model import Transcription
+from talk2type.ui.detail_dialog import TranscriptionDetailDialog
+
+_ID_ROLE = Qt.ItemDataRole.UserRole
 
 DARK_BG = "#1e1e2e"
 DARKER_BG = "#11111b"
@@ -43,6 +46,28 @@ QListWidget::item {{
 }}
 QListWidget::item:last-child {{
     border-bottom: none;
+}}
+QScrollBar:vertical {{
+    background: {DARKER_BG};
+    width: 8px;
+    border-radius: 4px;
+    margin: 0;
+}}
+QScrollBar::handle:vertical {{
+    background: #585b70;
+    border-radius: 4px;
+    min-height: 24px;
+}}
+QScrollBar::handle:vertical:hover {{
+    background: {ACCENT};
+}}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {{
+    height: 0;
+}}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {{
+    background: none;
 }}
 QFrame#stat_card {{
     background-color: {CARD_BG};
@@ -143,6 +168,8 @@ class HomePage(QWidget):
 
         # Recent list
         self.recent_list = QListWidget()
+        self.recent_list.setWordWrap(True)
+        self.recent_list.itemClicked.connect(self._on_item_clicked)
         root.addWidget(self.recent_list)
 
         root.addStretch()
@@ -188,6 +215,13 @@ class HomePage(QWidget):
 
         for r in rows:
             time_str = r.ts.strftime("%I:%M %p")
-            preview = r.cleaned[:80] + ("..." if len(r.cleaned) > 80 else "")
-            item = QListWidgetItem(f'{time_str}  "{preview}"')
+            item = QListWidgetItem(f'{time_str}  "{r.cleaned}"')
+            item.setData(_ID_ROLE, r.id)
             self.recent_list.addItem(item)
+
+    def _on_item_clicked(self, item: QListWidgetItem) -> None:
+        row_id = item.data(_ID_ROLE)
+        if row_id is None:
+            return
+        dlg = TranscriptionDetailDialog(row_id, parent=self)
+        dlg.exec()
