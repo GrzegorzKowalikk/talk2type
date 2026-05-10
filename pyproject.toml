@@ -19,7 +19,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-mock>=3.12"]
+dev = [
+    "bandit>=1.9.4",
+    "pytest>=8",
+    "pytest-mock>=3.12",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 markers = ["integration: wymaga GPU+Ollama, pomijany w CI"]

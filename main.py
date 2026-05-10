@@ -11,6 +11,7 @@ from talk2type.audio import Recorder
 from talk2type.config import setup_logging
 from talk2type.hotkey import HotkeyListener
 from talk2type.llm import cleanup_text, unload as unload_llm
+from talk2type.main_window import MainWindow
 from talk2type.overlay import OverlayWindow
 from talk2type.db.service import save_transcription
 from talk2type.paste import paste_text
@@ -26,9 +27,13 @@ class App:
         setup_logging()
         self._qt = QApplication(sys.argv)
         self._overlay = OverlayWindow()
+        self._window = MainWindow()
         self.recorder = Recorder()
         self.stt = WhisperSTT()
-        self.tray = Tray(on_quit=self.shutdown)
+        self.tray = Tray(
+            on_quit=lambda: QTimer.singleShot(0, self._qt, self.shutdown),
+            on_open=lambda: QTimer.singleShot(0, self._qt, self._window.bring_to_front),
+        )
         self.resmgr = ResourceManager(on_unload=self.unload_all)
         self.hotkey = HotkeyListener(
             on_pl_start=lambda: self._start("pl"),

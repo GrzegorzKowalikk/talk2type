@@ -11,3 +11,20 @@ class Transcription(SQLModel, table=True):
     app: str | None = None
     stt_ms: int | None = None
     llm_ms: int | None = None
+
+
+class Hotword(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    word: str
+
+
+class Snippet(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    body: str
+
+
+class Note(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    body: str = ""

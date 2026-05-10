@@ -1,6 +1,23 @@
 import numpy as np
 import pytest
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
+
+from sqlmodel import SQLModel, Session, create_engine
+
+from talk2type.db.model import Hotword  # noqa: F401 -- registers metadata
+
+
+def _hotword_engine(words=None):
+    if words is None:
+        words = ["Claude", "Claude Code", "Anthropic"]
+    e = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(e)
+    with Session(e) as s:
+        for w in words:
+            s.add(Hotword(word=w))
+        s.commit()
+    return e
 
 
 @pytest.fixture
@@ -9,7 +26,21 @@ def mock_whisper_model():
         yield WM
 
 
-def test_lazy_load(mock_whisper_model):
+@pytest.fixture
+def mock_db():
+    """Provide an in-memory DB with default hotwords, patched into stt."""
+    e = _hotword_engine()
+
+    @contextmanager
+    def _sess():
+        with Session(e) as s:
+            yield s
+
+    with patch("talk2type.stt.get_session", side_effect=_sess):
+        yield e
+
+
+def test_lazy_load(mock_whisper_model, mock_db):
     from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
@@ -36,7 +67,7 @@ def test_lazy_load(mock_whisper_model):
     assert mock_whisper_model.call_count == 1
 
 
-def test_transcribe_passes_language(mock_whisper_model):
+def test_transcribe_passes_language(mock_whisper_model, mock_db):
     from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
@@ -60,7 +91,7 @@ def test_transcribe_passes_language(mock_whisper_model):
     )
 
 
-def test_transcribe_concatenates_segments(mock_whisper_model):
+def test_transcribe_concatenates_segments(mock_whisper_model, mock_db):
     from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()
@@ -75,7 +106,7 @@ def test_transcribe_concatenates_segments(mock_whisper_model):
     assert result == "hello world"
 
 
-def test_unload_releases_model(mock_whisper_model):
+def test_unload_releases_model(mock_whisper_model, mock_db):
     from talk2type.stt import WhisperSTT
 
     stt = WhisperSTT()

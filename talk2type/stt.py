@@ -5,7 +5,11 @@ import time
 import numpy as np
 from faster_whisper import WhisperModel
 
-from .config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_HOTWORDS, WHISPER_MODEL
+from sqlmodel import select
+
+from .config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_MODEL
+from .db.engine import get_session
+from .db.model import Hotword
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +29,9 @@ class WhisperSTT:
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
         self._ensure_loaded()
         assert self._model is not None
-        initial_prompt = ", ".join(WHISPER_HOTWORDS) if WHISPER_HOTWORDS else None
+        with get_session() as s:
+            hotwords = [h.word for h in s.exec(select(Hotword)).all()]
+        initial_prompt = ", ".join(hotwords) if hotwords else None
         segments, _info = self._model.transcribe(
             audio, language=language, beam_size=5, vad_filter=True,
             initial_prompt=initial_prompt,
