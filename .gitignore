@@ -8,4 +8,4 @@ __pycache__/
 logs/
 desktop.ini
 
-data/
+data/history.db
