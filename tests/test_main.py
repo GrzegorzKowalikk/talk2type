@@ -16,6 +16,7 @@ def app_with_mocks():
         MockTray = stack.enter_context(patch("main.Tray"))
         MockResMgr = stack.enter_context(patch("main.ResourceManager"))
         MockHotkey = stack.enter_context(patch("main.HotkeyListener"))
+        stack.enter_context(patch("main.save_transcription"))
 
         from main import App
 

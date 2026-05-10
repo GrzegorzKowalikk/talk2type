@@ -1,65 +1,68 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
 
-@pytest.fixture
-def tmp_startup(tmp_path):
-    """Provide a temp directory as the Startup folder."""
-    return tmp_path
+def test_install_creates_task():
+    mock_result = MagicMock()
+    mock_result.returncode = 0
 
-
-def test_install_creates_lnk(tmp_startup):
-    with (
-        patch("scripts.install_autostart.pythoncom") as mock_com,
-        patch("scripts.install_autostart.shell") as mock_shell,
-        patch("scripts.install_autostart.shellcon") as mock_shellcon,
-        patch(
-            "scripts.install_autostart.os.path.join",
-            return_value=str(tmp_startup / "own_wisprflow.lnk"),
-        ),
-        patch("scripts.install_autostart.Path") as MockPath,
-        patch("scripts.install_autostart.sys") as mock_sys,
-    ):
-        from scripts.install_autostart import install
-
-        mock_shellcon.CSIDL_STARTUP = 7
-        mock_shell.SHGetFolderPath.return_value = str(tmp_startup)
-
-        link = MagicMock()
-        mock_com.CoCreateInstance.return_value = link
-        persist = MagicMock()
-        link.QueryInterface.return_value = persist
+    with patch("subprocess.run", return_value=mock_result) as mock_run, \
+         patch("scripts.install_autostart.Path") as MockPath:
 
         pythonw = MagicMock()
         pythonw.exists.return_value = True
         pythonw.__str__ = lambda s: "C:\\pythonw.exe"
-        mock_sys.executable = "C:\\Python312\\python.exe"
 
-        # Patch Path to resolve to project root
+        xml_file = MagicMock()
+        xml_file.__str__ = lambda s: "C:\\project\\scripts\\_autostart_task.xml"
+
         root = MagicMock()
-        root.__truediv__ = lambda s, o: MagicMock()
-        MockPath.return_value.resolve.return_value.parent.parent = root
+        scripts_dir = MagicMock()
+        scripts_dir.__truediv__ = lambda s, o: xml_file
+        root.__truediv__ = lambda s, o: scripts_dir
 
+        instance = MockPath.return_value
+        instance.resolve.return_value.parent.parent = root
+        instance.with_name.return_value = pythonw
+
+        from scripts.install_autostart import install
         install()
 
-        # Verify COM was used to create the link
-        mock_com.CoCreateInstance.assert_called_once()
-        persist.Save.assert_called_once()
+    mock_run.assert_called_once()
+    args = mock_run.call_args[0][0]
+    assert "schtasks" in args
+    assert "/Create" in args
 
 
-def test_uninstall_removes_lnk(tmp_startup):
-    from scripts.install_autostart import uninstall
+def test_install_raises_if_pythonw_missing():
+    with patch("scripts.install_autostart.Path") as MockPath:
+        pythonw = MagicMock()
+        pythonw.exists.return_value = False
 
-    # Create a fake .lnk file
-    lnk_path = tmp_startup / "own_wisprflow.lnk"
-    lnk_path.write_text("fake shortcut")
+        root = MagicMock()
+        root.__truediv__ = lambda s, o: MagicMock()
 
-    with (
-        patch("scripts.install_autostart.shell") as mock_shell,
-        patch("scripts.install_autostart.shellcon") as mock_shellcon,
-    ):
-        mock_shellcon.CSIDL_STARTUP = 7
-        mock_shell.SHGetFolderPath.return_value = str(tmp_startup)
+        instance = MockPath.return_value
+        instance.resolve.return_value.parent.parent = root
+        instance.with_name.return_value = pythonw
+
+        from scripts.install_autostart import install
+        try:
+            install()
+            assert False, "should have raised"
+        except RuntimeError:
+            pass
+
+
+def test_uninstall_calls_schtasks_delete():
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+
+    with patch("subprocess.run", return_value=mock_result) as mock_run:
+        from scripts.install_autostart import uninstall
         uninstall()
 
-    assert not lnk_path.exists()
+    mock_run.assert_called_once()
+    args = mock_run.call_args[0][0]
+    assert "schtasks" in args
+    assert "/Delete" in args
+    assert "talk2type" in args

@@ -12,6 +12,7 @@ from talk2type.config import setup_logging
 from talk2type.hotkey import HotkeyListener
 from talk2type.llm import cleanup_text, unload as unload_llm
 from talk2type.overlay import OverlayWindow
+from talk2type.db.service import save_transcription
 from talk2type.paste import paste_text
 from talk2type.resource_mgr import ResourceManager
 from talk2type.stt import WhisperSTT
@@ -62,18 +63,23 @@ class App:
         threading.Thread(target=self._run_pipeline, args=(audio, lang), daemon=True).start()
 
     def _run_pipeline(self, audio, lang):
-        t0 = time.monotonic()
         try:
             if audio.size < 1600:
                 log.info("Short audio (%d samples) -- skipping", audio.size)
                 return
+            t0 = time.monotonic()
             raw = self.stt.transcribe(audio, language=lang)
+            stt_ms = int((time.monotonic() - t0) * 1000)
             self.resmgr.mark_activity()
             log.info("STT [%s]: %s", lang, raw)
+            t1 = time.monotonic()
             cleaned = cleanup_text(raw, language=lang)
+            llm_ms = int((time.monotonic() - t1) * 1000)
             log.info("LLM: %s", cleaned)
             paste_text(cleaned)
-            log.info("Pipeline: %.2fs", time.monotonic() - t0)
+            if raw:
+                save_transcription(raw, cleaned, stt_ms=stt_ms, llm_ms=llm_ms)
+            log.info("Pipeline: stt=%dms llm=%dms", stt_ms, llm_ms)
         finally:
             self.tray.set_state("idle")
             self._overlay.request_hide()

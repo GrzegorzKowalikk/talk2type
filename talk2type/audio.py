@@ -16,9 +16,10 @@ class Recorder:
 
     def start(self, level_callback=None):
         self._q = queue.Queue()
+        q = self._q
 
         def _cb(indata, frames, t, status):
-            self._q.put(indata.copy())
+            q.put(indata.copy())
             if level_callback:
                 level_callback(float(np.sqrt(np.mean(indata ** 2))))
 
@@ -36,6 +37,7 @@ class Recorder:
         self._stream.stop()
         self._stream.close()
         self._stream = None
+        assert self._q is not None
         chunks = []
         while True:
             try:

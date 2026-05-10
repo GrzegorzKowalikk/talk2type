@@ -7,3 +7,5 @@ __pycache__/
 .pytest_cache
 logs/
 desktop.ini
+
+data/history.db

@@ -15,6 +15,7 @@ dependencies = [
     "Pillow>=10.0",
     "pywin32>=306",
     "pyside6>=6.5",
+    "sqlmodel>=0.0.38",
 ]
 
 [dependency-groups]

@@ -48,13 +48,15 @@ def test_transcribe_passes_language(mock_whisper_model):
     # PL
     stt.transcribe(audio, language="pl")
     instance.transcribe.assert_called_with(
-        audio, language="pl", beam_size=5, vad_filter=True
+        audio, language="pl", beam_size=5, vad_filter=True,
+        initial_prompt="Claude, Claude Code, Anthropic",
     )
 
     # EN
     stt.transcribe(audio, language="en")
     instance.transcribe.assert_called_with(
-        audio, language="en", beam_size=5, vad_filter=True
+        audio, language="en", beam_size=5, vad_filter=True,
+        initial_prompt="Claude, Claude Code, Anthropic",
     )
 
 

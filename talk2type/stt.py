@@ -24,6 +24,7 @@ class WhisperSTT:
 
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
         self._ensure_loaded()
+        assert self._model is not None
         initial_prompt = ", ".join(WHISPER_HOTWORDS) if WHISPER_HOTWORDS else None
         segments, _info = self._model.transcribe(
             audio, language=language, beam_size=5, vad_filter=True,
