@@ -1,9 +1,9 @@
-import os
+import subprocess
 import sys
 from pathlib import Path
 
-import pythoncom
-from win32com.shell import shell, shellcon
+TASK_NAME = "talk2type"
+DELAY = "PT30S"
 
 
 def install():
@@ -13,29 +13,49 @@ def install():
     if not pythonw.exists():
         raise RuntimeError(f"pythonw.exe not found next to {sys.executable}")
 
-    link = pythoncom.CoCreateInstance(
-        shell.CLSID_ShellLink,
-        None,
-        pythoncom.CLSCTX_INPROC_SERVER,
-        shell.IID_IShellLink,
-    )
-    link.SetPath(str(pythonw))
-    link.SetArguments(f'"{main_py}"')
-    link.SetWorkingDirectory(str(project_root))
-    link.SetDescription("talk2type autostart")
+    xml = f"""<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <Delay>{DELAY}</Delay>
+    </LogonTrigger>
+  </Triggers>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>{pythonw}</Command>
+      <Arguments>"{main_py}"</Arguments>
+      <WorkingDirectory>{project_root}</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>"""
 
-    startup = shell.SHGetFolderPath(0, shellcon.CSIDL_STARTUP, 0, 0)
-    target = os.path.join(startup, "talk2type.lnk")
-    link.QueryInterface(pythoncom.IID_IPersistFile).Save(target, 0)
-    print(f"Installed: {target}")
+    xml_file = project_root / "scripts" / "_autostart_task.xml"
+    xml_file.write_text(xml, encoding="utf-16")
+    try:
+        subprocess.run(
+            ["schtasks", "/Create", "/TN", TASK_NAME, "/XML", str(xml_file), "/F"],
+            check=True,
+            capture_output=True,
+        )
+        print(f"Installed: Task Scheduler task '{TASK_NAME}' (30s delay after logon)")
+    finally:
+        xml_file.unlink(missing_ok=True)
 
 
 def uninstall():
-    startup = shell.SHGetFolderPath(0, shellcon.CSIDL_STARTUP, 0, 0)
-    target = os.path.join(startup, "talk2type.lnk")
-    if os.path.exists(target):
-        os.remove(target)
-        print(f"Removed: {target}")
+    result = subprocess.run(
+        ["schtasks", "/Delete", "/TN", TASK_NAME, "/F"],
+        capture_output=True,
+    )
+    if result.returncode == 0:
+        print(f"Removed: Task Scheduler task '{TASK_NAME}'")
     else:
         print("Not installed.")
 

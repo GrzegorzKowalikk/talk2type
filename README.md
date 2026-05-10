@@ -123,7 +123,9 @@ Then update `OLLAMA_MODEL` in `config.py`.
 
 ## Autostart on Windows login
 
-**Install** (creates a shortcut in your Windows Startup folder):
+Registers a Windows Task Scheduler task that launches talk2type **30 seconds after logon** — the delay lets Windows finish loading first, which keeps boot fast.
+
+**Install:**
 
 ```powershell
 uv run python scripts/install_autostart.py
@@ -134,6 +136,10 @@ uv run python scripts/install_autostart.py
 ```powershell
 uv run python scripts/install_autostart.py --uninstall
 ```
+
+To adjust the delay, change `DELAY` in `scripts/install_autostart.py` (ISO 8601 duration, e.g. `PT60S` for 60 seconds), then reinstall.
+
+> The task uses `MultipleInstancesPolicy=IgnoreNew`, so triggering it manually while it is already running has no effect.
 
 ---
 
@@ -191,7 +197,7 @@ talk2type/
   config.py       — all tuneable constants
 
 scripts/
-  install_autostart.py  — Windows Startup folder shortcut manager
+  install_autostart.py  — Task Scheduler autostart manager (30s delay after logon)
 
 tests/            — unit tests (pytest + pytest-mock)
 tests/integration/— integration tests (real GPU + Ollama)

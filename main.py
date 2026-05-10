@@ -1,6 +1,7 @@
-import logging
+﻿import logging
 import signal
 import sys
+import threading
 import time
 
 from PySide6.QtCore import QTimer
@@ -35,7 +36,7 @@ class App:
             on_en_stop=lambda: self._stop("en"),
         )
         self._busy = False
-        log.info("App initialized — F9=PL, F10=EN")
+        log.info("App initialized -- F9=PL, F10=EN")
 
     def unload_all(self):
         self.stt.unload()
@@ -44,6 +45,7 @@ class App:
     def _start(self, lang):
         if self._busy:
             return
+        self.resmgr.mark_activity()
         self.tray.set_state("recording")
         self._overlay.request_recording(lang)
         self.recorder.start(level_callback=self._overlay.push_rms)
@@ -55,12 +57,15 @@ class App:
             return
         self._busy = True
         audio = self.recorder.stop()
-        t0 = time.monotonic()
         self.tray.set_state("processing")
         self._overlay.request_processing()
+        threading.Thread(target=self._run_pipeline, args=(audio, lang), daemon=True).start()
+
+    def _run_pipeline(self, audio, lang):
+        t0 = time.monotonic()
         try:
             if audio.size < 1600:
-                log.info("Short audio (%d samples) — skipping", audio.size)
+                log.info("Short audio (%d samples) -- skipping", audio.size)
                 return
             raw = self.stt.transcribe(audio, language=lang)
             self.resmgr.mark_activity()

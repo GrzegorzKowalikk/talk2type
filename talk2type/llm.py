@@ -29,7 +29,7 @@ def cleanup_text(raw: str, language: str = "pl") -> str:
             ],
             think=False,
             keep_alive="3m",
-            options={"temperature": 0.1, "num_predict": 256},
+            options={"temperature": 0.1, "num_predict": -1},
         )
         log.info("LLM call: %.2fs", time.monotonic() - t0)
         return response.message.content.strip().strip('"')
