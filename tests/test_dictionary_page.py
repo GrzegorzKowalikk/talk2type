@@ -165,3 +165,40 @@ def test_no_seed_when_db_not_empty(qt_app):
     assert w.word_list.count() == 1
     assert w.word_list.item(0).data(256) == "Existing"
     w.close()
+
+
+# --- hotwords_changed signal ---
+
+
+def test_add_word_emits_hotwords_changed(dict_page):
+    seen = []
+    dict_page.hotwords_changed.connect(lambda: seen.append(1))
+    dict_page.input.setText("Kubernetes")
+    dict_page.add_word()
+    assert seen == [1]
+
+
+def test_duplicate_add_does_not_emit(dict_page):
+    seen = []
+    dict_page.hotwords_changed.connect(lambda: seen.append(1))
+    dict_page.input.setText("Claude")  # already seeded
+    dict_page.add_word()
+    assert seen == []
+
+
+def test_empty_input_does_not_emit(dict_page):
+    seen = []
+    dict_page.hotwords_changed.connect(lambda: seen.append(1))
+    dict_page.input.setText("   ")
+    dict_page.add_word()
+    assert seen == []
+
+
+def test_remove_word_emits_hotwords_changed(dict_page):
+    dict_page.input.setText("Tmp")
+    dict_page.add_word()
+    item = dict_page.word_list.item(0)
+    seen = []
+    dict_page.hotwords_changed.connect(lambda: seen.append(1))
+    dict_page.remove_word(item.data(257))  # 257 = _ID_DATA
+    assert seen == [1]
