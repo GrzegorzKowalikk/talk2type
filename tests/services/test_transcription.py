@@ -124,6 +124,19 @@ def test_unload_then_transcribe_reloads():
         assert WM.call_count == 2
 
 
+def test_cuda_dll_dirs_prepended_to_path(monkeypatch):
+    from talk2type.services import transcription
+
+    monkeypatch.setenv("PATH", r"C:\existing")
+    transcription._add_cuda_dll_dirs()
+    import os
+
+    head = os.environ["PATH"].split(os.pathsep)[:-1]
+    assert any("cublas" in p for p in head)
+    assert any("cudnn" in p for p in head)
+    assert os.environ["PATH"].endswith(r"C:\existing")
+
+
 def test_transcribe_does_not_hit_db():
     from talk2type.services.transcription import TranscriptionService
 

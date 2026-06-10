@@ -18,7 +18,7 @@ Push-to-talk voice dictation for Windows. Hold a hotkey → speak → release �
 - **Python 3.12+**
 - **[uv](https://docs.astral.sh/uv/)** — Python package manager
 - **[Ollama](https://ollama.com/)** — local LLM runtime
-- **CUDA Toolkit** matching your GPU driver (tested with CUDA 12.x)
+- **NVIDIA driver** (up to date) — no CUDA Toolkit needed; cuBLAS/cuDNN for CUDA 12 install automatically with `uv sync`
 
 ---
 
@@ -63,7 +63,7 @@ This installs all dependencies including `faster-whisper`, `PySide6`, `pystray`,
 uv run python -c "import ctranslate2; print(ctranslate2.get_cuda_device_count())"
 ```
 
-If the output is `1` or more, CUDA is available. If `0`, check that your NVIDIA driver is up to date. faster-whisper uses CTranslate2 (not PyTorch) which bundles its own CUDA runtime, so a driver-only install is usually sufficient.
+If the output is `1` or more, CUDA is available. If `0`, check that your NVIDIA driver is up to date. faster-whisper uses CTranslate2 (not PyTorch); the CUDA 12 runtime libraries it needs (cuBLAS, cuDNN 9) are installed by `uv sync` via the `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` packages — no system CUDA Toolkit required.
 
 ---
 
@@ -213,6 +213,10 @@ tests/integration/— integration tests (real GPU + Ollama)
 
 **`CUDA error: no kernel image is available for execution on the device`**
 - Your GPU driver is too old. Update to the latest NVIDIA driver from [nvidia.com](https://www.nvidia.com/drivers).
+
+**`RuntimeError: Library cublas64_12.dll is not found or cannot be loaded`**
+- CTranslate2 needs the CUDA **12** runtime DLLs; a system CUDA 13 toolkit only ships `cublas64_13.dll`, which does not satisfy it.
+- Run `uv sync` — the `nvidia-cublas-cu12` / `nvidia-cudnn-cu12` packages provide the DLLs and the app adds them to `PATH` at startup.
 
 **Ollama not reachable**
 - Make sure Ollama is running: `ollama serve` or check the system tray for the Ollama icon.

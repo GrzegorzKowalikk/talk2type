@@ -1,7 +1,11 @@
 import gc
+import importlib.util
 import logging
+import os
+import sys
 import threading
 import time
+from pathlib import Path
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -12,6 +16,23 @@ from talk2type.db.engine import get_session
 from talk2type.db.model import Hotword
 
 log = logging.getLogger(__name__)
+
+
+def _add_cuda_dll_dirs() -> None:
+    """ctranslate2 loads cublas64_12/cudnn64_9 at runtime via PATH search on
+    Windows; the nvidia-*-cu12 wheels ship DLLs a CUDA 13 toolkit doesn't have."""
+    if sys.platform != "win32":
+        return
+    for pkg in ("cublas", "cudnn"):
+        spec = importlib.util.find_spec(f"nvidia.{pkg}")
+        if spec is None or not spec.submodule_search_locations:
+            continue
+        bin_dir = Path(spec.submodule_search_locations[0]) / "bin"
+        if bin_dir.is_dir():
+            os.environ["PATH"] = f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+_add_cuda_dll_dirs()
 
 
 class TranscriptionService:
