@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -78,6 +79,8 @@ QPushButton:hover {{
 
 
 class DictionaryPage(QWidget):
+    hotwords_changed = Signal()
+
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setStyleSheet(_QSS)
@@ -159,11 +162,16 @@ class DictionaryPage(QWidget):
             s.commit()
         self.input.clear()
         self.refresh_data()
+        self.hotwords_changed.emit()
 
     def remove_word(self, word_id: int) -> None:
+        removed = False
         with get_session() as s:
             row = s.get(Hotword, word_id)
             if row is not None:
                 s.delete(row)
                 s.commit()
+                removed = True
         self.refresh_data()
+        if removed:
+            self.hotwords_changed.emit()
