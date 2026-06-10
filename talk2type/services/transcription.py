@@ -43,8 +43,11 @@ class TranscriptionService:
 
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
         self.preload()
-        assert self._model is not None
-        segments, _info = self._model.transcribe(
+        with self._load_lock:
+            # local ref: ResourceManager may unload() concurrently mid-transcription
+            model = self._model
+        assert model is not None
+        segments, _info = model.transcribe(
             audio,
             language=language,
             beam_size=5,

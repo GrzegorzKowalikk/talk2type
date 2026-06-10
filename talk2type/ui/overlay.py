@@ -157,7 +157,8 @@ class OverlayWindow(QWidget):
         )
 
         p.setPen(Qt.PenStyle.NoPen)
-        for i, v in enumerate(self._rms):
+        # copy: audio thread appends to the deque while we iterate
+        for i, v in enumerate(list(self._rms)):
             h = max(3, int(v * _BAR_MAX_H))
             x = _M + _LABEL_END + i * (_BAR_W + _BAR_GAP)
             y = _M + (_H - h) // 2

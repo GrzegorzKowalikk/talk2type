@@ -30,11 +30,13 @@ class DictationStateMachine(QObject):
 
     @property
     def state(self) -> State:
-        return self._state
+        with self._lock:
+            return self._state
 
     @property
     def lang(self) -> str:
-        return self._lang
+        with self._lock:
+            return self._lang
 
     def press(self, lang: str) -> bool:
         with self._lock:
