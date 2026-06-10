@@ -1,6 +1,6 @@
 # Redesign architektury talk2type — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Plan jest podzielony na FALE (waves) — taski w jednej fali są niezależne i mogą iść równolegle (wave-agents, worktree per agent).
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking. Plan jest podzielony na FALE (waves) — taski w jednej fali są niezależne i mogą iść równolegle (wave-agents, worktree per agent).
 
 **Goal:** Przebudowa talk2type na architekturę warstwową (maszyna stanów + serwisy + sygnały Qt) z anulowaniem Esc, preloadem modeli, stabilnością (crash hooks) i czarno-białym overlayem.
 
@@ -26,7 +26,7 @@
 - Create: `talk2type/core/cancellation.py`
 - Test: `tests/core/__init__.py` (pusty), `tests/core/test_cancellation.py`
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```python
 # tests/core/test_cancellation.py
@@ -50,8 +50,8 @@ def test_cancel_is_idempotent():
     assert t.cancelled is True
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/core/test_cancellation.py -v` → FAIL (ModuleNotFoundError)
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/core/test_cancellation.py -v` → FAIL (ModuleNotFoundError)
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/core/cancellation.py
@@ -72,8 +72,8 @@ class CancellationToken:
         return self._evt.is_set()
 ```
 
-- [ ] **Step 4:** `uv run pytest tests/core/test_cancellation.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(core): add CancellationToken"`
+- [x] **Step 4:** `uv run pytest tests/core/test_cancellation.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(core): add CancellationToken"`
 
 ---
 
@@ -85,7 +85,7 @@ class CancellationToken:
 
 (Jeśli `talk2type/core/__init__.py` nie istnieje w twoim worktree — utwórz pusty; merge jest trywialny.)
 
-- [ ] **Step 1: Failing test** — przypadki z tests.md sekcja `test_states`. Wzorzec:
+- [x] **Step 1: Failing test** — przypadki z tests.md sekcja `test_states`. Wzorzec:
 
 ```python
 # tests/core/test_states.py
@@ -180,8 +180,8 @@ def test_finish_only_acts_in_processing(machine):
 
 Uwaga: sygnały Qt na obiekcie bez pętli zdarzeń emitują synchronicznie w tym samym wątku — `QApplication` niepotrzebna, ale jeśli import PySide6 wymaga instancji, użyj fixture `qt_app` jak w `tests/test_overlay.py`.
 
-- [ ] **Step 2:** `uv run pytest tests/core/test_states.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/core/test_states.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/core/states.py
@@ -260,8 +260,8 @@ class DictationStateMachine(QObject):
         self.returned_to_idle.emit(reason)
 ```
 
-- [ ] **Step 4:** `uv run pytest tests/core/test_states.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(core): add DictationStateMachine with cancel transitions"`
+- [x] **Step 4:** `uv run pytest tests/core/test_states.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(core): add DictationStateMachine with cancel transitions"`
 
 ---
 
@@ -275,7 +275,7 @@ class DictationStateMachine(QObject):
 
 NIE usuwaj `talk2type/llm.py` — usuwa go Task 10 (Wave 3), bo stary `main.py` z niego korzysta do czasu przepięcia.
 
-- [ ] **Step 1: Failing test** — przypadki z tests.md sekcja `test_cleanup`. Mock: `patch("talk2type.services.cleanup.chat")`. Kluczowe asercje:
+- [x] **Step 1: Failing test** — przypadki z tests.md sekcja `test_cleanup`. Mock: `patch("talk2type.services.cleanup.chat")`. Kluczowe asercje:
 
 ```python
 # tests/services/test_cleanup.py (szkielet — uzupełnij wszystkie przypadki z tests.md)
@@ -318,8 +318,8 @@ def test_prompts_forbid_answering():
     assert SYSTEM_EN.count("Input:") >= 3
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/services/test_cleanup.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/services/test_cleanup.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/prompts.py  (pełna nowa treść)
@@ -432,8 +432,8 @@ class CleanupService:
 
 **Anti-pattern guard:** parametry `chat()` tylko z udokumentowanych: `model, messages, think, keep_alive, options` (context7 `/ollama/ollama-python`). Żadnych `system=`, `session=`, `context=` na kliencie pythonowym.
 
-- [ ] **Step 4:** `uv run pytest tests/services/test_cleanup.py -v` → PASS. UWAGA: stare testy `tests/test_llm.py` mogą się wywalić na asercjach treści promptów — jeśli tak, zaktualizuj w nich tylko oczekiwane stringi promptów (reszta to zakres Taska 10).
-- [ ] **Step 5:** `git commit -m "feat(services): add CleanupService with hardened few-shot prompts"`
+- [x] **Step 4:** `uv run pytest tests/services/test_cleanup.py -v` → PASS. UWAGA: stare testy `tests/test_llm.py` mogą się wywalić na asercjach treści promptów — jeśli tak, zaktualizuj w nich tylko oczekiwane stringi promptów (reszta to zakres Taska 10).
+- [x] **Step 5:** `git commit -m "feat(services): add CleanupService with hardened few-shot prompts"`
 
 ---
 
@@ -445,7 +445,7 @@ class CleanupService:
 
 NIE usuwaj `talk2type/stt.py` (Task 10). Utwórz `talk2type/services/__init__.py` / `tests/services/__init__.py` jeśli brak.
 
-- [ ] **Step 1: Failing test** — przypadki z tests.md. DB: użyj fixture in-memory wzorem `tests/db/conftest.py`; patchuj `talk2type.services.transcription.get_session`. Mock `patch("talk2type.services.transcription.WhisperModel")`.
+- [x] **Step 1: Failing test** — przypadki z tests.md. DB: użyj fixture in-memory wzorem `tests/db/conftest.py`; patchuj `talk2type.services.transcription.get_session`. Mock `patch("talk2type.services.transcription.WhisperModel")`.
 
 ```python
 # tests/services/test_transcription.py (szkielet — uzupełnij wszystkie przypadki z tests.md)
@@ -486,8 +486,8 @@ def test_concurrent_preload_loads_once():
 
 (Konstruktor woła `refresh_hotwords()` → w testach hotwordów podstaw in-memory DB wzorem `tests/db/conftest.py`; w pozostałych patchuj `refresh_hotwords` jak wyżej.)
 
-- [ ] **Step 2:** `uv run pytest tests/services/test_transcription.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/services/test_transcription.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/services/transcription.py
@@ -558,8 +558,8 @@ class TranscriptionService:
 
 **Anti-pattern guards:** `hotwords=` to string (nie lista) — zweryfikowane w context7 `/systran/faster-whisper` ("Hotwords/hint phrases to the model"). NIE używaj `initial_prompt` do hotwords. Żadnego query do DB w `transcribe()` — tylko cache.
 
-- [ ] **Step 4:** `uv run pytest tests/services/test_transcription.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(services): add TranscriptionService with preload and hotword cache"`
+- [x] **Step 4:** `uv run pytest tests/services/test_transcription.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(services): add TranscriptionService with preload and hotword cache"`
 
 ---
 
@@ -572,7 +572,7 @@ class TranscriptionService:
 
 NIE usuwaj starych `talk2type/audio.py`, `talk2type/paste.py`, `tests/test_audio.py`, `tests/test_paste.py` (Task 10).
 
-- [ ] **Step 1:** Skopiuj `tests/test_audio.py` → `tests/services/test_audio.py`, zamień import na `from talk2type.services.audio import AudioRecorder`. Analogicznie paste → klasa:
+- [x] **Step 1:** Skopiuj `tests/test_audio.py` → `tests/services/test_audio.py`, zamień import na `from talk2type.services.audio import AudioRecorder`. Analogicznie paste → klasa:
 
 ```python
 # tests/services/test_paste.py
@@ -598,8 +598,8 @@ def test_paste_copies_and_sends_ctrl_v():
 
 (Jeśli patch `__init__` wyjdzie nieczytelny — patchuj `talk2type.services.paste.Controller` zamiast tego; wybierz czytelniejsze.)
 
-- [ ] **Step 2:** `uv run pytest tests/services/test_audio.py tests/services/test_paste.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/services/test_audio.py tests/services/test_paste.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/services/audio.py — identyczna logika jak talk2type/audio.py
@@ -676,8 +676,8 @@ class PasteService:
             self._kb.release("v")
 ```
 
-- [ ] **Step 4:** `uv run pytest tests/services/ -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(services): add AudioRecorder and PasteService"`
+- [x] **Step 4:** `uv run pytest tests/services/ -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(services): add AudioRecorder and PasteService"`
 
 ---
 
@@ -689,7 +689,7 @@ class PasteService:
 
 Zmiany vs stary overlay: mniejszy pill (260×44), monochromatyczny (czarne tło, białe elementy — zero czerwieni i niebieskiego), publiczne sloty `on_recording(str)/on_processing()/on_idle(str)` zamiast `request_*` + wewnętrznych `_Signals` (sygnały maszyny stanów same kolejkują wywołania między wątkami — zweryfikowane: Qt queued connections, doc.qt.io/qtforpython-6).
 
-- [ ] **Step 1: Failing test** — adaptuj `tests/test_overlay.py`: te same fixtury `qt_app`/`overlay` (import z `talk2type.ui.overlay`), wywołania `overlay.on_recording("pl")` itd. zamiast `request_*` (bez `processEvents` — to zwykłe metody-sloty). Dodaj:
+- [x] **Step 1: Failing test** — adaptuj `tests/test_overlay.py`: te same fixtury `qt_app`/`overlay` (import z `talk2type.ui.overlay`), wywołania `overlay.on_recording("pl")` itd. zamiast `request_*` (bez `processEvents` — to zwykłe metody-sloty). Dodaj:
 
 ```python
 def test_on_idle_hides_after_fade(overlay, qt_app):
@@ -706,8 +706,8 @@ def test_pill_is_compact():
     assert mod._W <= 300 and mod._H <= 56
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/ui/test_overlay.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/ui/test_overlay.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/ui/overlay.py
@@ -889,8 +889,8 @@ class OverlayWindow(QWidget):
 
 **Anti-pattern guard:** zero kolorów poza skalą szarości/bieli (`QColor(r,g,b)` z r==g==b). Żadnych wywołań metod QWidget z innych wątków — jedyny cross-thread entry point to `push_rms` (deque append, atomowe) i sloty podpinane do sygnałów.
 
-- [ ] **Step 4:** `uv run pytest tests/ui/test_overlay.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(ui): monochrome compact overlay driven by state machine signals"`
+- [x] **Step 4:** `uv run pytest tests/ui/test_overlay.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(ui): monochrome compact overlay driven by state machine signals"`
 
 ---
 
@@ -900,7 +900,7 @@ class OverlayWindow(QWidget):
 - Modify: `talk2type/hotkey.py` (pełna podmiana)
 - Test: `tests/test_hotkey.py` (pełna adaptacja)
 
-- [ ] **Step 1: Failing test** — przepisz `tests/test_hotkey.py` na nowe API:
+- [x] **Step 1: Failing test** — przepisz `tests/test_hotkey.py` na nowe API:
 
 ```python
 # tests/test_hotkey.py
@@ -951,8 +951,8 @@ def test_other_keys_ignored():
     assert not any(m.called for m in cbs.values())
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/test_hotkey.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/test_hotkey.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/hotkey.py
@@ -1002,8 +1002,8 @@ UWAGA: stary `main.py` przestaje się importować z nowym API? Nie — `main.py`
 
 **Anti-pattern guard:** `Key.esc` istnieje w pynput (zweryfikowane context7 `/moses-palmer/pynput`). Esc NIE jest tłumiony (`suppress` nie używamy) — inne aplikacje dalej dostają Esc; filtrowanie "tylko gdy nie-IDLE" robi maszyna stanów.
 
-- [ ] **Step 4:** `uv run pytest tests/test_hotkey.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(hotkey): Esc cancel callback and unified on_start/on_stop API"`
+- [x] **Step 4:** `uv run pytest tests/test_hotkey.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(hotkey): Esc cancel callback and unified on_start/on_stop API"`
 
 ---
 
@@ -1013,7 +1013,7 @@ UWAGA: stary `main.py` przestaje się importować z nowym API? Nie — `main.py`
 - Modify: `talk2type/ui/pages/dictionary.py`
 - Test: `tests/test_dictionary_page.py` (rozszerzenie)
 
-- [ ] **Step 1: Failing test** (dopisz do istniejącego pliku, użyj jego fixture DB/qt):
+- [x] **Step 1: Failing test** (dopisz do istniejącego pliku, użyj jego fixture DB/qt):
 
 ```python
 def test_add_word_emits_hotwords_changed(page, qt_app):
@@ -1046,13 +1046,13 @@ def test_remove_word_emits_hotwords_changed(page, qt_app):
 
 (Dopasuj nazwę fixture do istniejącej w `tests/test_dictionary_page.py` — przeczytaj plik przed edycją.)
 
-- [ ] **Step 2:** `uv run pytest tests/test_dictionary_page.py -v` → FAIL
-- [ ] **Step 3: Implementacja** — w `DictionaryPage`:
+- [x] **Step 2:** `uv run pytest tests/test_dictionary_page.py -v` → FAIL
+- [x] **Step 3: Implementacja** — w `DictionaryPage`:
   - dodaj sygnał klasowy: `hotwords_changed = Signal()` (import `Signal` z `PySide6.QtCore`)
   - w `add_word`: po `s.commit()` (tylko gdy faktycznie dodano — czyli po ścieżce, która nie wpadła w `return` dla duplikatu/pustego) dodaj `self.hotwords_changed.emit()`
   - w `remove_word`: po `s.commit()` gdy `row is not None` → `self.hotwords_changed.emit()` (emit poza blokiem `with`)
-- [ ] **Step 4:** `uv run pytest tests/test_dictionary_page.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(ui): emit hotwords_changed from dictionary page"`
+- [x] **Step 4:** `uv run pytest tests/test_dictionary_page.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(ui): emit hotwords_changed from dictionary page"`
 
 ---
 
@@ -1066,7 +1066,7 @@ def test_remove_word_emits_hotwords_changed(page, qt_app):
 
 Zależy od: Task 1 (token), Task 2 (maszyna). Serwisy w testach to mocki — Taski 3-5 potrzebne tylko do uruchomienia appki, nie do tego taska.
 
-- [ ] **Step 1: Failing test** — wszystkie przypadki z tests.md sekcja `test_pipeline`. Wzorzec synchronizacji wątku: po `on_release` czekaj na powrót maszyny do IDLE:
+- [x] **Step 1: Failing test** — wszystkie przypadki z tests.md sekcja `test_pipeline`. Wzorzec synchronizacji wątku: po `on_release` czekaj na powrót maszyny do IDLE:
 
 ```python
 # tests/core/test_pipeline.py
@@ -1177,8 +1177,8 @@ def test_error_in_stt_returns_to_idle(pipeline, deps):
     deps["paste"].paste.assert_not_called()
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/core/test_pipeline.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/core/test_pipeline.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/core/pipeline.py
@@ -1284,8 +1284,8 @@ class DictationPipeline:
                 self._machine.finish("done")
 ```
 
-- [ ] **Step 4:** `uv run pytest tests/core/test_pipeline.py -v` → PASS
-- [ ] **Step 5:** `git commit -m "feat(core): add DictationPipeline with cancellation and preload"`
+- [x] **Step 4:** `uv run pytest tests/core/test_pipeline.py -v` → PASS
+- [x] **Step 5:** `git commit -m "feat(core): add DictationPipeline with cancellation and preload"`
 
 ---
 
@@ -1301,7 +1301,7 @@ class DictationPipeline:
 - Delete: `talk2type/audio.py`, `talk2type/stt.py`, `talk2type/llm.py`, `talk2type/overlay.py`, `talk2type/paste.py`, `tests/test_main.py`, `tests/test_audio.py`, `tests/test_paste.py`, `tests/test_overlay.py`, `tests/test_llm.py`, `tests/test_stt.py`
 - Modify: `tests/test_integration.py`, `tests/test_pipeline_history.py`, `tests/test_tray.py`, `tests/test_main_window.py`, `tests/integration/test_stt_integration.py`, `tests/integration/test_llm_integration.py` (importy/API na nowe klasy; merytoryka asercji bez zmian)
 
-- [ ] **Step 1: Failing testy** dla nowych plików:
+- [x] **Step 1: Failing testy** dla nowych plików:
 
 ```python
 # tests/test_diagnostics.py
@@ -1348,8 +1348,8 @@ def test_unload_models_unloads_both_services():
     app._cleanup.unload.assert_called_once()
 ```
 
-- [ ] **Step 2:** `uv run pytest tests/test_app.py tests/test_diagnostics.py -v` → FAIL
-- [ ] **Step 3: Implementacja**
+- [x] **Step 2:** `uv run pytest tests/test_app.py tests/test_diagnostics.py -v` → FAIL
+- [x] **Step 3: Implementacja**
 
 ```python
 # talk2type/diagnostics.py
@@ -1485,8 +1485,8 @@ if __name__ == "__main__":
 
 Migracja importów po `git mv`: `grep -r "talk2type.main_window\|talk2type.overlay\|talk2type.tray\|talk2type.audio\|talk2type.stt\|talk2type.llm\|talk2type.paste\b" talk2type/ tests/ main.py scripts/` i podmień na nowe ścieżki (`talk2type.ui.*`, `talk2type.services.*`). `tests/test_main_window.py` — tylko import. `tests/test_integration.py` i `tests/test_pipeline_history.py` — przepisz orkiestrację na `DictationPipeline` + `DictationStateMachine` (asercje co do zapisu historii bez zmian). Integration testy: `WhisperSTT` → `TranscriptionService`, `cleanup_text(...)` → `CleanupService().cleanup(...)`.
 
-- [ ] **Step 4:** `uv run pytest` (cały suite) → PASS
-- [ ] **Step 5:** `git commit -m "feat(app): thin bootstrap with state machine wiring, crash hooks, 15min idle timeout"`
+- [x] **Step 4:** `uv run pytest` (cały suite) → PASS
+- [x] **Step 5:** `git commit -m "feat(app): thin bootstrap with state machine wiring, crash hooks, 15min idle timeout"`
 
 ---
 
@@ -1496,8 +1496,8 @@ Migracja importów po `git mv`: `grep -r "talk2type.main_window\|talk2type.overl
 
 **Files:** brak nowych — tylko sprawdzenia.
 
-- [ ] **Step 1:** `uv run pytest` → komplet PASS
-- [ ] **Step 2:** grep-strażnicy (wszystkie muszą zwrócić ZERO trafień):
+- [x] **Step 1:** `uv run pytest` → komplet PASS
+- [x] **Step 2:** grep-strażnicy (wszystkie muszą zwrócić ZERO trafień):
 
 ```
 grep -rn "initial_prompt" talk2type/
@@ -1508,9 +1508,9 @@ grep -rn "on_pl_start\|on_en_start" talk2type/ tests/
 grep -rn "talk2type.audio\|talk2type.stt\|talk2type.llm\b\|talk2type.overlay\|talk2type.main_window\|talk2type.tray\|talk2type.paste\b" talk2type/ tests/ main.py
 ```
 
-- [ ] **Step 3:** struktura: `talk2type/audio.py`, `stt.py`, `llm.py`, `overlay.py`, `paste.py`, `main_window.py`, `tray.py` NIE istnieją w korzeniu pakietu; `core/`, `services/`, `ui/` istnieją.
+- [x] **Step 3:** struktura: `talk2type/audio.py`, `stt.py`, `llm.py`, `overlay.py`, `paste.py`, `main_window.py`, `tray.py` NIE istnieją w korzeniu pakietu; `core/`, `services/`, `ui/` istnieją.
 - [ ] **Step 4:** smoke manualny (wymaga GPU+Ollama — opcjonalny, do wykonania przez użytkownika): `uv run python main.py` → F9 dyktuj, Esc w trakcie nagrywania → overlay znika i nic się nie wkleja; Esc w trakcie processing → nic się nie wkleja; krótkie tapnięcie F9 → nic; drugie nagranie zaraz po cancelu działa.
-- [ ] **Step 5:** zaznacz `[x]` w plan.md i tests.md, commit `docs: mark redesign plan complete`.
+- [x] **Step 5:** zaznacz `[x]` w plan.md i tests.md, commit `docs: mark redesign plan complete`.
 
 ---
 
