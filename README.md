@@ -60,10 +60,10 @@ This installs all dependencies including `faster-whisper`, `PySide6`, `pystray`,
 ### 6. Verify CUDA is available
 
 ```powershell
-uv run python -c "import torch; print(torch.cuda.is_available())"
+uv run python -c "import ctranslate2; print(ctranslate2.get_cuda_device_count())"
 ```
 
-If `False`, check that your CUDA driver version matches the installed CUDA toolkit. faster-whisper uses CTranslate2 which bundles its own CUDA runtime, so a driver-only install is usually sufficient.
+If the output is `1` or more, CUDA is available. If `0`, check that your NVIDIA driver is up to date. faster-whisper uses CTranslate2 (not PyTorch) which bundles its own CUDA runtime, so a driver-only install is usually sufficient.
 
 ---
 
