@@ -29,24 +29,25 @@ class TranscriptionService:
         self._hotwords = ", ".join(words) if words else None
 
     def preload(self) -> None:
+        self._get_model()
+
+    def _get_model(self) -> WhisperModel:
+        """Load-and-return under one lock so a concurrent unload() can't
+        null the model between loading it and using it."""
         with self._load_lock:
-            if self._model is not None:
-                return
-            t0 = time.monotonic()
-            self._model = WhisperModel(
-                WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
-            )
-            log.info(
-                "Whisper loaded (%s, %s) in %.1fs",
-                WHISPER_MODEL, WHISPER_COMPUTE, time.monotonic() - t0,
-            )
+            if self._model is None:
+                t0 = time.monotonic()
+                self._model = WhisperModel(
+                    WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
+                )
+                log.info(
+                    "Whisper loaded (%s, %s) in %.1fs",
+                    WHISPER_MODEL, WHISPER_COMPUTE, time.monotonic() - t0,
+                )
+            return self._model
 
     def transcribe(self, audio: np.ndarray, language: str = "pl") -> str:
-        self.preload()
-        with self._load_lock:
-            # local ref: ResourceManager may unload() concurrently mid-transcription
-            model = self._model
-        assert model is not None
+        model = self._get_model()
         segments, _info = model.transcribe(
             audio,
             language=language,
