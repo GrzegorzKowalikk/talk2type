@@ -25,6 +25,8 @@ class DictationPipeline:
         self._paste = paste
         self._level_callback = level_callback
         self._on_activity = on_activity
+        # written/read only from the pynput listener thread (events arrive
+        # sequentially); workers get their token as an argument, not via this attr
         self._token: CancellationToken | None = None
 
     # --- events (pynput thread) ---
