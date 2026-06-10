@@ -1,3 +1,4 @@
+# talk2type/hotkey.py
 from pynput import keyboard
 from pynput.keyboard import Key
 
@@ -7,27 +8,27 @@ _KEYS = {"pl": getattr(Key, HOTKEY_PL), "en": getattr(Key, HOTKEY_EN)}
 
 
 class HotkeyListener:
-    def __init__(self, on_pl_start, on_pl_stop, on_en_start, on_en_stop):
-        self._cb = {
-            "pl_start": on_pl_start,
-            "pl_stop": on_pl_stop,
-            "en_start": on_en_start,
-            "en_stop": on_en_stop,
-        }
+    def __init__(self, on_start, on_stop, on_cancel):
+        self._on_start = on_start
+        self._on_stop = on_stop
+        self._on_cancel = on_cancel
         self._down = {"pl": False, "en": False}
         self._listener = None
 
     def _on_press(self, key, injected=None):
+        if key == Key.esc:
+            self._on_cancel()
+            return
         for lang, bound in _KEYS.items():
             if key == bound and not self._down[lang]:
                 self._down[lang] = True
-                self._cb[f"{lang}_start"]()
+                self._on_start(lang)
 
     def _on_release(self, key, injected=None):
         for lang, bound in _KEYS.items():
             if key == bound and self._down[lang]:
                 self._down[lang] = False
-                self._cb[f"{lang}_stop"]()
+                self._on_stop(lang)
 
     def start(self):
         self._listener = keyboard.Listener(

@@ -1,56 +1,46 @@
-import pytest
+# tests/test_hotkey.py
 from unittest.mock import MagicMock
+
 from pynput.keyboard import Key
 
-
-@pytest.fixture
-def callbacks():
-    return {
-        "pl_start": MagicMock(),
-        "pl_stop": MagicMock(),
-        "en_start": MagicMock(),
-        "en_stop": MagicMock(),
-    }
+from talk2type.hotkey import HotkeyListener
 
 
-@pytest.fixture
-def listener(callbacks):
-    from talk2type.hotkey import HotkeyListener
-
-    hl = HotkeyListener(
-        on_pl_start=callbacks["pl_start"],
-        on_pl_stop=callbacks["pl_stop"],
-        on_en_start=callbacks["en_start"],
-        on_en_stop=callbacks["en_stop"],
-    )
-    return hl
+def _listener():
+    cbs = {"start": MagicMock(), "stop": MagicMock(), "cancel": MagicMock()}
+    hl = HotkeyListener(on_start=cbs["start"], on_stop=cbs["stop"], on_cancel=cbs["cancel"])
+    return hl, cbs
 
 
-def test_f9_triggers_pl_callbacks(listener, callbacks):
-    listener._on_press(Key.f9)
-    callbacks["pl_start"].assert_called_once()
-
-    listener._on_release(Key.f9)
-    callbacks["pl_stop"].assert_called_once()
-
-
-def test_f10_triggers_en_callbacks(listener, callbacks):
-    listener._on_press(Key.f10)
-    callbacks["en_start"].assert_called_once()
-
-    listener._on_release(Key.f10)
-    callbacks["en_stop"].assert_called_once()
+def test_f9_press_starts_pl_once():
+    hl, cbs = _listener()
+    hl._on_press(Key.f9)
+    hl._on_press(Key.f9)  # auto-repeat while held
+    cbs["start"].assert_called_once_with("pl")
 
 
-def test_repeated_press_ignored(listener, callbacks):
-    """OS auto-repeat: holding a key fires multiple press events."""
-    listener._on_press(Key.f9)
-    callbacks["pl_start"].assert_called_once()
+def test_f9_release_stops_pl():
+    hl, cbs = _listener()
+    hl._on_press(Key.f9)
+    hl._on_release(Key.f9)
+    cbs["stop"].assert_called_once_with("pl")
 
-    # Auto-repeat — should not trigger again
-    listener._on_press(Key.f9)
-    assert callbacks["pl_start"].call_count == 1
 
-    # Release
-    listener._on_release(Key.f9)
-    callbacks["pl_stop"].assert_called_once()
+def test_f10_maps_to_en():
+    hl, cbs = _listener()
+    hl._on_press(Key.f10)
+    cbs["start"].assert_called_once_with("en")
+
+
+def test_esc_triggers_cancel():
+    hl, cbs = _listener()
+    hl._on_press(Key.esc)
+    cbs["cancel"].assert_called_once_with()
+    cbs["start"].assert_not_called()
+
+
+def test_other_keys_ignored():
+    hl, cbs = _listener()
+    hl._on_press(Key.space)
+    hl._on_release(Key.space)
+    assert not any(m.called for m in cbs.values())
