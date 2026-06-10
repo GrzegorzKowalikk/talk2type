@@ -15,7 +15,7 @@ def qt_app():
 
 @pytest.fixture
 def win(qt_app):
-    from talk2type.main_window import MainWindow
+    from talk2type.ui.main_window import MainWindow
 
     w = MainWindow()
     yield w

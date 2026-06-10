@@ -7,10 +7,10 @@ import pytest
 def tray_deps():
     """Patch heavy deps so Tray can be instantiated without a display."""
     with (
-        patch("talk2type.tray.Image") as mock_img,
-        patch("talk2type.tray.Icon") as mock_icon_cls,
-        patch("talk2type.tray.Menu") as mock_menu_cls,
-        patch("talk2type.tray.MenuItem") as mock_menuitem_cls,
+        patch("talk2type.ui.tray.Image") as mock_img,
+        patch("talk2type.ui.tray.Icon") as mock_icon_cls,
+        patch("talk2type.ui.tray.Menu") as mock_menu_cls,
+        patch("talk2type.ui.tray.MenuItem") as mock_menuitem_cls,
     ):
         yield {
             "Image": mock_img,
@@ -21,7 +21,7 @@ def tray_deps():
 
 
 def test_tray_accepts_on_open(tray_deps):
-    from talk2type.tray import Tray
+    from talk2type.ui.tray import Tray
 
     on_open = MagicMock()
     on_quit = MagicMock()
@@ -33,7 +33,7 @@ def test_tray_accepts_on_open(tray_deps):
 
 
 def test_open_callback_wired(tray_deps):
-    from talk2type.tray import Tray
+    from talk2type.ui.tray import Tray
 
     on_open = MagicMock()
     on_quit = MagicMock()
@@ -54,7 +54,7 @@ def test_open_callback_wired(tray_deps):
 
 
 def test_quit_callback_still_works(tray_deps):
-    from talk2type.tray import Tray
+    from talk2type.ui.tray import Tray
 
     on_quit = MagicMock()
     Tray(on_quit=on_quit, on_open=MagicMock())
@@ -73,7 +73,7 @@ def test_quit_callback_still_works(tray_deps):
 
 
 def test_menu_has_both_items(tray_deps):
-    from talk2type.tray import Tray
+    from talk2type.ui.tray import Tray
 
     Tray(on_quit=MagicMock(), on_open=MagicMock())
 

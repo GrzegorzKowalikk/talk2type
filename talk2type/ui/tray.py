@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 from pystray import Icon, Menu, MenuItem
 
-_IMAGES_DIR = Path(__file__).parent.parent / "images"
+_IMAGES_DIR = Path(__file__).parent.parent.parent / "images"
 
 
 class Tray:
@@ -19,9 +19,6 @@ class Tray:
             "Talk2Type",
             Menu(*menu_items),
         )
-
-    def set_state(self, state: str):
-        pass
 
     def run(self):
         threading.Thread(target=self._icon.run, daemon=True).start()

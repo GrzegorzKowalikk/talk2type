@@ -5,9 +5,9 @@ pytestmark = pytest.mark.integration
 
 
 def test_real_pl_transcription():
-    from talk2type.stt import WhisperSTT
+    from talk2type.services.transcription import TranscriptionService
 
-    stt = WhisperSTT()
+    stt = TranscriptionService()
     # Load a pre-recorded fixture or generate silence for smoke test
     # For now, use a fixture WAV if available
     try:

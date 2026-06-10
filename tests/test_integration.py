@@ -21,15 +21,15 @@ def qt_app():
 
 def test_tray_open_shows_main_window(qt_app):
     """Simulating the tray 'Open' callback invokes window.show()."""
-    from talk2type.tray import Tray
+    from talk2type.ui.tray import Tray
 
     shown = MagicMock()
 
     with (
-        patch("talk2type.tray.Image"),
-        patch("talk2type.tray.Icon"),
-        patch("talk2type.tray.Menu"),
-        patch("talk2type.tray.MenuItem") as mi_cls,
+        patch("talk2type.ui.tray.Image"),
+        patch("talk2type.ui.tray.Icon"),
+        patch("talk2type.ui.tray.Menu"),
+        patch("talk2type.ui.tray.MenuItem") as mi_cls,
     ):
         Tray(on_quit=MagicMock(), on_open=shown)
 
@@ -49,7 +49,7 @@ def test_main_window_has_real_page_widgets(qt_app):
     from talk2type.ui.pages.home import HomePage
     from talk2type.ui.pages.notes import NotesPage
     from talk2type.ui.pages.snippets import SnippetsPage
-    from talk2type.main_window import MainWindow
+    from talk2type.ui.main_window import MainWindow
 
     w = MainWindow()
     assert isinstance(w.home_page, HomePage)
@@ -62,7 +62,7 @@ def test_main_window_has_real_page_widgets(qt_app):
 
 def test_switch_to_history_calls_refresh(qt_app):
     """Clicking the History nav button triggers refresh_data on that page."""
-    from talk2type.main_window import MainWindow
+    from talk2type.ui.main_window import MainWindow
 
     w = MainWindow()
     refreshed = MagicMock()
@@ -81,7 +81,7 @@ def test_switch_to_history_calls_refresh(qt_app):
 
 def test_refresh_current_page_delegates_to_active_page(qt_app):
     """refresh_current_page() calls refresh_data on the visible page."""
-    from talk2type.main_window import MainWindow
+    from talk2type.ui.main_window import MainWindow
 
     w = MainWindow()
     # Home is the default active page
@@ -94,7 +94,7 @@ def test_refresh_current_page_delegates_to_active_page(qt_app):
 
 def test_window_close_and_reopen(qt_app):
     """Closing and re-showing the window does not crash."""
-    from talk2type.main_window import MainWindow
+    from talk2type.ui.main_window import MainWindow
 
     w = MainWindow()
     w.show()
