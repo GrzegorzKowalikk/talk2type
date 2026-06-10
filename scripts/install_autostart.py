@@ -5,6 +5,25 @@ from pathlib import Path
 TASK_NAME = "talk2type"
 DELAY = "PT30S"
 
+# Register-ScheduledTask instead of `schtasks /Create /XML`: the latter
+# requires elevation, the CIM API can register a current-user logon task
+# without admin rights.
+_INSTALL_PS = """
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$trigger.Delay = '{delay}'
+$action = New-ScheduledTaskAction -Execute '{pythonw}' -Argument '"{main_py}"' -WorkingDirectory '{project_root}'
+$settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName '{task_name}' -Trigger $trigger -Action $action -Settings $settings -Force | Out-Null
+"""
+
+
+def _run_ps(script: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+        capture_output=True,
+        text=True,
+    )
+
 
 def install():
     project_root = Path(__file__).resolve().parent.parent
@@ -13,46 +32,23 @@ def install():
     if not pythonw.exists():
         raise RuntimeError(f"pythonw.exe not found next to {sys.executable}")
 
-    xml = f"""<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <Triggers>
-    <LogonTrigger>
-      <Enabled>true</Enabled>
-      <Delay>{DELAY}</Delay>
-    </LogonTrigger>
-  </Triggers>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-  </Settings>
-  <Actions Context="Author">
-    <Exec>
-      <Command>{pythonw}</Command>
-      <Arguments>"{main_py}"</Arguments>
-      <WorkingDirectory>{project_root}</WorkingDirectory>
-    </Exec>
-  </Actions>
-</Task>"""
-
-    xml_file = project_root / "scripts" / "_autostart_task.xml"
-    xml_file.write_text(xml, encoding="utf-16")
-    try:
-        subprocess.run(
-            ["schtasks", "/Create", "/TN", TASK_NAME, "/XML", str(xml_file), "/F"],
-            check=True,
-            capture_output=True,
+    result = _run_ps(
+        _INSTALL_PS.format(
+            delay=DELAY,
+            pythonw=pythonw,
+            main_py=main_py,
+            project_root=project_root,
+            task_name=TASK_NAME,
         )
-        print(f"Installed: Task Scheduler task '{TASK_NAME}' (30s delay after logon)")
-    finally:
-        xml_file.unlink(missing_ok=True)
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Register-ScheduledTask failed:\n{result.stderr}")
+    print(f"Installed: Task Scheduler task '{TASK_NAME}' (30s delay after logon)")
 
 
 def uninstall():
-    result = subprocess.run(
-        ["schtasks", "/Delete", "/TN", TASK_NAME, "/F"],
-        capture_output=True,
+    result = _run_ps(
+        f"Unregister-ScheduledTask -TaskName '{TASK_NAME}' -Confirm:$false"
     )
     if result.returncode == 0:
         print(f"Removed: Task Scheduler task '{TASK_NAME}'")
