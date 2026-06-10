@@ -2,7 +2,7 @@ import collections
 import ctypes
 
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath
+from PySide6.QtGui import QColor, QCursor, QFont, QGuiApplication, QPainter, QPainterPath
 from PySide6.QtWidgets import QApplication, QWidget
 
 _BARS = 28
@@ -83,6 +83,7 @@ class OverlayWindow(QWidget):
         self._tick = 0
         self._pulse_timer.start()
         self._wave_timer.start()
+        self._reposition()
         self.show()
         self.update()
 
@@ -115,7 +116,8 @@ class OverlayWindow(QWidget):
             self.hide()
 
     def _reposition(self):
-        screen = QApplication.primaryScreen().geometry()
+        screen_obj = QGuiApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
+        screen = screen_obj.geometry()
         self.move(screen.center().x() - _WIN_W // 2, screen.bottom() - 120 - _WIN_H)
 
     # --- painting ---
