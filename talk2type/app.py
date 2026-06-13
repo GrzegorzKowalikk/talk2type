@@ -1,11 +1,13 @@
+import ctypes
 import logging
 import signal
 import sys
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-from talk2type.config import setup_logging
+from talk2type.config import APP_ID, ICON_ICO, setup_logging
 from talk2type.core.pipeline import DictationPipeline
 from talk2type.core.states import DictationStateMachine
 from talk2type.diagnostics import install_crash_hooks
@@ -25,8 +27,13 @@ log = logging.getLogger(__name__)
 class App:
     def __init__(self):
         setup_logging()
+        if not self._acquire_single_instance():
+            log.info("Another talk2type instance is already running -- exiting")
+            sys.exit(0)
         install_crash_hooks()
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
         self._qt = QApplication(sys.argv)
+        self._qt.setWindowIcon(QIcon(str(ICON_ICO)))
 
         self._machine = DictationStateMachine()
         self._overlay = OverlayWindow()
@@ -54,6 +61,12 @@ class App:
         )
         self._connect_signals()
         log.info("App initialized -- F9=PL, F10=EN, Esc=cancel")
+
+    def _acquire_single_instance(self) -> bool:
+        kernel32 = ctypes.windll.kernel32
+        self._mutex = kernel32.CreateMutexW(None, False, f"{APP_ID}-singleton")
+        ERROR_ALREADY_EXISTS = 183
+        return kernel32.GetLastError() != ERROR_ALREADY_EXISTS
 
     def _connect_signals(self):
         self._machine.recording_started.connect(self._overlay.on_recording)

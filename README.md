@@ -125,6 +125,8 @@ Then update `OLLAMA_MODEL` in `config.py`.
 
 Registers a Windows Task Scheduler task that launches talk2type **30 seconds after logon** — the delay lets Windows finish loading first, which keeps boot fast.
 
+The installer also adds a branded **talk2type** profile to Windows Terminal (microphone icon, blue tab) and the task opens that profile, so the app runs in a clearly labelled terminal. A single-instance lock guarantees only one copy ever runs, even if Windows reopens a previous terminal.
+
 **Install:**
 
 ```powershell
