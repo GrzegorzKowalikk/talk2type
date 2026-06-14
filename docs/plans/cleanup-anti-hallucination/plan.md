@@ -51,16 +51,16 @@ Brak nowych zewnętrznych bibliotek.
 ## Fazy
 
 ### Faza 1 — regex filler (RED→GREEN)
-- [ ] `tests.md` → testy `strip_fillers()` (patrz tests.md).
-- [ ] Funkcja `strip_fillers(text: str) -> str` w `cleanup.py`. Regex
+- [x] `tests.md` → testy `strip_fillers()` (patrz tests.md).
+- [x] Funkcja `strip_fillers(text: str) -> str` w `cleanup.py`. Regex
       `\b([eyahm])\1+\b` case-insensitive (ten sam znak powtórzony ≥2×), plus
       kolaps powstałych podwójnych spacji. NIE `[eyahm]{2,}` — to tnie "ma"/"hej".
-- [ ] Weryfikacja: nie tnie prawdziwych słów (dlatego powtórzenie tego samego znaku + `\b`).
+- [x] Weryfikacja: nie tnie prawdziwych słów (dlatego powtórzenie tego samego znaku + `\b`).
 
 ### Faza 2 — strażnik diff (RED→GREEN)
-- [ ] Testy `is_safe(before, after, threshold=0.70) -> bool`.
-- [ ] Funkcja licząca `SequenceMatcher` na `.lower().split()` obu tekstów.
-- [ ] Próg jako stała modułowa `GUARD_THRESHOLD = 0.70` (łatwe strojenie).
+- [x] Testy `is_safe(before, after, threshold=0.70) -> bool`.
+- [x] Funkcja licząca `SequenceMatcher` na `.lower().split()` obu tekstów.
+- [x] Próg jako stała modułowa `GUARD_THRESHOLD = 0.70` (łatwe strojenie).
 
 ### Faza 3 — przepisanie promptów (7A)
 - [x] `prompts.py`: nowe SYSTEM_PL / SYSTEM_EN — zakres zawężony do filler
@@ -70,17 +70,17 @@ Brak nowych zewnętrznych bibliotek.
       słowa (głównie tożsamość). Min. 1 przykład czysto-tożsamościowy.
 
 ### Faza 4 — integracja w `cleanup()` (RED→GREEN)
-- [ ] `cleanup()`: `raw` → `strip_fillers` → `regexed`; LLM dostaje `regexed`;
+- [x] `cleanup()`: `raw` → `strip_fillers` → `regexed`; LLM dostaje `regexed`;
       wynik LLM → `is_safe(regexed, llm_out)`? tak: zwróć `llm_out`; nie: zwróć
       `regexed` + `log.info("guard rejected: ratio=%.2f", r)`.
 - [x] `temperature: 0`.
-- [ ] Istniejący `try/except` → przy błędzie LLM zwróć `regexed` (nie surowy `raw`).
-- [ ] Pusty/whitespace `raw` → zwróć `raw` (jak teraz).
+- [x] Istniejący `try/except` → przy błędzie LLM zwróć `regexed` (nie surowy `raw`).
+- [x] Pusty/whitespace `raw` → zwróć `raw` (jak teraz).
 
 ### Faza 5 — quality gate
-- [ ] `uv run pytest` zielony.
-- [ ] `lint-and-validate`.
-- [ ] Ręczny test: 5 dłuższych dyktowań, sprawdź log odsetka fallbacków (metryka 8A).
+- [x] `uv run pytest` zielony (188 passed).
+- [ ] `lint-and-validate` (ruff nie zainstalowany w venv — pominięte).
+- [ ] Ręczny test: 5 dłuższych dyktowań, sprawdź log odsetka fallbacków (metryka 8A) — **brama ludzka przed mergem**.
 
 ## Out of scope (świadomie odłożone)
 - Podbicie modelu do 7b (8B) — tylko jeśli metryka pokaże wysoki fallback.
