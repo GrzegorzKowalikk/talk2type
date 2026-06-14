@@ -1,4 +1,5 @@
 import logging
+import re
 
 from ollama import chat
 
@@ -9,6 +10,15 @@ log = logging.getLogger(__name__)
 
 _PROMPTS = {"pl": SYSTEM_PL, "en": SYSTEM_EN}
 _LABELS = {"pl": ("Tekst", "Odpowiedź"), "en": ("Text", "Response")}
+
+_FILLER_RE = re.compile(r"\b([eyahm])\1+\b", re.IGNORECASE)
+
+
+def strip_fillers(text: str) -> str:
+    if not text.strip():
+        return text
+    stripped = _FILLER_RE.sub("", text)
+    return re.sub(r" {2,}", " ", stripped).strip()
 
 
 class CleanupService:
@@ -21,13 +31,14 @@ class CleanupService:
     def cleanup(self, raw: str, language: str = "pl") -> str:
         if not raw.strip():
             return raw
+        cleaned = strip_fillers(raw)
         label_text, label_resp = _LABELS[language]
         try:
             response = chat(
                 model=self._model,
                 messages=[
                     {"role": "system", "content": _PROMPTS[language]},
-                    {"role": "user", "content": f'{label_text}: "{raw}"\n{label_resp}:'},
+                    {"role": "user", "content": f'{label_text}: "{cleaned}"\n{label_resp}:'},
                 ],
                 think=False,
                 keep_alive=self._keep_alive,

@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from talk2type.prompts import SYSTEM_EN, SYSTEM_PL
-from talk2type.services.cleanup import CleanupService
+from talk2type.services.cleanup import CleanupService, strip_fillers
 
 
 def _mock_response(content: str):
@@ -101,3 +103,21 @@ def test_prompt_content_sanity():
     assert SYSTEM_PL.count("Tekst:") >= 3
     assert "NEVER answer" in SYSTEM_EN
     assert SYSTEM_EN.count("Input:") >= 3
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("dzisiaj eee pojechałem yyy do sklepu", "dzisiaj pojechałem do sklepu"),
+        ("mmm aaa hhh", ""),
+        ("eeee yyyyy", ""),
+        ("Mam dwa psy", "Mam dwa psy"),
+        (" to jest hej", "to jest hej"),
+        ("Eee no właśnie", "no właśnie"),
+        ("", ""),
+        ("yyy", ""),
+        ("ma eee sens", "ma sens"),
+    ],
+)
+def test_strip_fillers(text, expected):
+    assert strip_fillers(text) == expected
