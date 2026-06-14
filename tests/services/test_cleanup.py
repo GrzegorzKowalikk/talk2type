@@ -1,9 +1,15 @@
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from talk2type.prompts import SYSTEM_EN, SYSTEM_PL
-from talk2type.services.cleanup import CleanupService, strip_fillers
+from talk2type.services.cleanup import (
+    GUARD_THRESHOLD,
+    CleanupService,
+    is_safe,
+    strip_fillers,
+)
 
 
 def _mock_response(content: str):
@@ -60,14 +66,6 @@ def test_cleanup_strips_whitespace_and_surrounding_quotes():
         assert result == "Dzisiaj byłem w sklepie."
 
 
-def test_cleanup_returns_raw_on_exception():
-    with patch("talk2type.services.cleanup.chat") as mock_chat:
-        mock_chat.side_effect = ConnectionError("no ollama")
-        service = CleanupService()
-
-        assert service.cleanup("abc", "pl") == "abc"
-
-
 def test_preload_calls_chat_with_minimal_options():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         service = CleanupService()
@@ -121,3 +119,73 @@ def test_prompt_content_sanity():
 )
 def test_strip_fillers(text, expected):
     assert strip_fillers(text) == expected
+
+
+@pytest.mark.parametrize(
+    "before, after, expected",
+    [
+        ("ala ma kota", "Ala Ma Kota", True),
+        ("ala ma kota", "Ala ma psa.", False),
+        (
+            "Ogólnie rozkminiam sobie teraz takie coś jak można",
+            "Rozumiem sobie teraz tak jak można by lepiej",
+            False,
+        ),
+        ("a b c d e f g h", "a b c d e f g h", True),
+        ("a b c d e f g h i j", "a b c d X Y Z Q i j", False),
+        ("", "", True),
+    ],
+)
+def test_is_safe(before, after, expected):
+    assert is_safe(before, after) is expected
+
+
+def test_guard_threshold_default():
+    assert GUARD_THRESHOLD == 0.70
+
+
+def test_is_safe_default_threshold_rejects_below_constant():
+    # ratio 0.667: below the 0.70 default, accepted only with a lower explicit threshold
+    assert is_safe("a b c", "a b X") is False
+    assert is_safe("a b c", "a b X", threshold=0.5) is True
+
+
+def test_cleanup_returns_llm_output_when_guard_passes():
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        mock_chat.return_value = _mock_response("Dzisiaj pojechałem do sklepu.")
+        service = CleanupService()
+
+        result = service.cleanup("dzisiaj pojechałem do sklepu", "pl")
+
+        assert result == "Dzisiaj pojechałem do sklepu."
+
+
+def test_cleanup_falls_back_to_regexed_when_guard_rejects():
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        mock_chat.return_value = _mock_response("zupełnie inny halucynowany tekst bez sensu")
+        service = CleanupService()
+
+        result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
+
+        assert result == "dzisiaj pojechałem do sklepu"
+
+
+def test_cleanup_falls_back_to_regexed_on_exception():
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        mock_chat.side_effect = ConnectionError("no ollama")
+        service = CleanupService()
+
+        result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
+
+        assert result == "dzisiaj pojechałem do sklepu"
+
+
+def test_cleanup_logs_ratio_on_guard_rejection(caplog):
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        mock_chat.return_value = _mock_response("zupełnie inny halucynowany tekst bez sensu")
+        service = CleanupService()
+
+        with caplog.at_level(logging.INFO, logger="talk2type.services.cleanup"):
+            service.cleanup("dzisiaj pojechałem do sklepu", "pl")
+
+        assert any("ratio" in r.message for r in caplog.records)

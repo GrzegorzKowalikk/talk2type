@@ -1,3 +1,4 @@
+import difflib
 import logging
 import re
 
@@ -19,6 +20,19 @@ def strip_fillers(text: str) -> str:
         return text
     stripped = _FILLER_RE.sub("", text)
     return re.sub(r" {2,}", " ", stripped).strip()
+
+
+GUARD_THRESHOLD = 0.70
+
+
+def is_safe(before: str, after: str, threshold: float = GUARD_THRESHOLD) -> bool:
+    return _guard_ratio(before, after) >= threshold
+
+
+def _guard_ratio(before: str, after: str) -> float:
+    return difflib.SequenceMatcher(
+        None, before.lower().split(), after.lower().split()
+    ).ratio()
 
 
 class CleanupService:
@@ -44,10 +58,15 @@ class CleanupService:
                 keep_alive=self._keep_alive,
                 options={"temperature": 0.1, "num_predict": -1},
             )
-            return response.message.content.strip().strip('"')
+            llm_out = response.message.content.strip().strip('"')
         except Exception:
-            log.exception("LLM cleanup failed -- returning raw text")
-            return raw
+            log.exception("LLM cleanup failed -- returning regex-cleaned text")
+            return cleaned
+
+        if is_safe(cleaned, llm_out):
+            return llm_out
+        log.info("guard rejected: ratio=%.2f", _guard_ratio(cleaned, llm_out))
+        return cleaned
 
     def preload(self) -> None:
         try:

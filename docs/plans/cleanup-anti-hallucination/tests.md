@@ -33,8 +33,8 @@ Po tej korekcie:
 
 | # | before | after | wynik | uzasadnienie |
 |---|--------|-------|-------|--------------|
-| 1 | `"ala ma kota"` | `"Ala ma kota."` | True | różni się tylko case/interpunkcja, ratio≈1 |
-| 2 | `"ala ma kota"` | `"Ala ma psa."` | True/False zależnie | jedno słowo zmienione, ratio≈0.66 → False (poniżej 0.7) — granica, dobrać przykład pewniejszy |
+| 1 | `"ala ma kota"` | `"Ala Ma Kota"` | True | różni się tylko wielkością liter — `.lower()` zbija do ratio=1.0 (edycja czysto formatująca przechodzi strażnika) |
+| 2 | `"ala ma kota"` | `"Ala ma psa."` | False | jedno słowo zmienione, ratio≈0.66 → poniżej 0.7 |
 | 3 | „Ogólnie rozkminiam sobie teraz takie coś jak można" | „Rozumiem sobie teraz tak jak można by lepiej" | False | realny case parafrazy, ratio<0.7 |
 | 4 | `"a b c d e f g h"` | `"a b c d e f g h"` | True | identyczne, ratio=1.0 |
 | 5 | `"a b c d e f g h i j"` | `"a b c d X Y Z Q i j"` | False | 4/10 słów zmienione → ratio=0.6 |
