@@ -63,17 +63,17 @@ Brak nowych zewnętrznych bibliotek.
 - [ ] Próg jako stała modułowa `GUARD_THRESHOLD = 0.70` (łatwe strojenie).
 
 ### Faza 3 — przepisanie promptów (7A)
-- [ ] `prompts.py`: nowe SYSTEM_PL / SYSTEM_EN — zakres zawężony do filler
+- [x] `prompts.py`: nowe SYSTEM_PL / SYSTEM_EN — zakres zawężony do filler
       kontekstowy + przejęzyczenia; explicite "interpunkcja i wielkie litery są
       już poprawne — NIE ruszaj".
-- [ ] Przykłady few-shot: wejście **z** interpunkcją, wyjście różniące się o 1-2
+- [x] Przykłady few-shot: wejście **z** interpunkcją, wyjście różniące się o 1-2
       słowa (głównie tożsamość). Min. 1 przykład czysto-tożsamościowy.
 
 ### Faza 4 — integracja w `cleanup()` (RED→GREEN)
 - [ ] `cleanup()`: `raw` → `strip_fillers` → `regexed`; LLM dostaje `regexed`;
       wynik LLM → `is_safe(regexed, llm_out)`? tak: zwróć `llm_out`; nie: zwróć
       `regexed` + `log.info("guard rejected: ratio=%.2f", r)`.
-- [ ] `temperature: 0`.
+- [x] `temperature: 0`.
 - [ ] Istniejący `try/except` → przy błędzie LLM zwróć `regexed` (nie surowy `raw`).
 - [ ] Pusty/whitespace `raw` → zwróć `raw` (jak teraz).
 

@@ -56,7 +56,7 @@ class CleanupService:
                 ],
                 think=False,
                 keep_alive=self._keep_alive,
-                options={"temperature": 0.1, "num_predict": -1},
+                options={"temperature": 0, "num_predict": -1},
             )
             llm_out = response.message.content.strip().strip('"')
         except Exception:

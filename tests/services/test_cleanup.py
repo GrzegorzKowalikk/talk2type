@@ -41,7 +41,7 @@ def test_cleanup_builds_fresh_pl_messages_and_kwargs():
         assert messages[1]["content"] == 'Tekst: "tekst"\nOdpowiedź:'
         assert kwargs["keep_alive"] == "15m"
         assert kwargs["think"] is False
-        assert kwargs["options"] == {"temperature": 0.1, "num_predict": -1}
+        assert kwargs["options"] == {"temperature": 0, "num_predict": -1}
 
 
 def test_cleanup_uses_english_prompt_and_labels():
@@ -168,6 +168,18 @@ def test_cleanup_falls_back_to_regexed_when_guard_rejects():
         result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
 
         assert result == "dzisiaj pojechałem do sklepu"
+
+
+def test_cleanup_strips_filler_then_returns_conservative_llm_output():
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        mock_chat.return_value = _mock_response("No test")
+        service = CleanupService()
+
+        result = service.cleanup("eee no test", "pl")
+
+        fed = mock_chat.call_args.kwargs["messages"][1]["content"]
+        assert fed == 'Tekst: "no test"\nOdpowiedź:'
+        assert result == "No test"
 
 
 def test_cleanup_falls_back_to_regexed_on_exception():
