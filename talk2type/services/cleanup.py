@@ -4,7 +4,7 @@ import re
 
 from ollama import chat
 
-from talk2type.config import OLLAMA_MODEL
+from talk2type.config import OLLAMA_MODEL, USE_LLM
 from talk2type.prompts import SYSTEM_EN, SYSTEM_PL
 
 log = logging.getLogger(__name__)
@@ -38,14 +38,18 @@ def _guard_ratio(before: str, after: str) -> float:
 class CleanupService:
     """LLM text cleanup. Every call builds a fresh message list — no chat history."""
 
-    def __init__(self, model: str = OLLAMA_MODEL, keep_alive: str = "15m"):
+    def __init__(self, model: str = OLLAMA_MODEL, keep_alive: str = "15m",
+                 enabled: bool = USE_LLM):
         self._model = model
         self._keep_alive = keep_alive
+        self._enabled = enabled
 
     def cleanup(self, raw: str, language: str = "pl") -> str:
         if not raw.strip():
             return raw
         cleaned = strip_fillers(raw)
+        if not self._enabled:
+            return cleaned
         label_text, label_resp = _LABELS[language]
         try:
             response = chat(
@@ -69,6 +73,8 @@ class CleanupService:
         return cleaned
 
     def preload(self) -> None:
+        if not self._enabled:
+            return
         try:
             chat(
                 model=self._model,
@@ -81,6 +87,8 @@ class CleanupService:
             log.exception("LLM preload failed")
 
     def unload(self) -> None:
+        if not self._enabled:
+            return
         try:
             chat(
                 model=self._model,

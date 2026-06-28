@@ -22,6 +22,9 @@ WHISPER_HOTWORDS = [
 
 OLLAMA_MODEL = "qwen3.5:2b"
 
+# Whisper alone is usually enough; flip to True to run LLM cleanup on top.
+USE_LLM = False
+
 SAMPLE_RATE = 16000
 CHANNELS = 1
 DTYPE = "float32"

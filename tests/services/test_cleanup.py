@@ -20,16 +20,24 @@ def _mock_response(content: str):
 
 def test_cleanup_empty_input_short_circuits():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
-        service = CleanupService()
+        service = CleanupService(enabled=True)
         assert service.cleanup("", "pl") == ""
         assert service.cleanup("   ", "pl") == "   "
+        mock_chat.assert_not_called()
+
+
+def test_cleanup_disabled_skips_llm_returns_regexed():
+    with patch("talk2type.services.cleanup.chat") as mock_chat:
+        service = CleanupService(enabled=False)
+        result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
+        assert result == "dzisiaj pojechałem do sklepu"
         mock_chat.assert_not_called()
 
 
 def test_cleanup_builds_fresh_pl_messages_and_kwargs():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("Tekst.")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         service.cleanup("tekst", "pl")
 
@@ -47,7 +55,7 @@ def test_cleanup_builds_fresh_pl_messages_and_kwargs():
 def test_cleanup_uses_english_prompt_and_labels():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("Text.")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         service.cleanup("text", "en")
 
@@ -59,7 +67,7 @@ def test_cleanup_uses_english_prompt_and_labels():
 def test_cleanup_strips_whitespace_and_surrounding_quotes():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response('  "Dzisiaj byłem w sklepie."  ')
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         result = service.cleanup("dzisiaj byłem w sklepie", "pl")
 
@@ -68,7 +76,7 @@ def test_cleanup_strips_whitespace_and_surrounding_quotes():
 
 def test_preload_calls_chat_with_minimal_options():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         service.preload()
 
@@ -80,7 +88,7 @@ def test_preload_calls_chat_with_minimal_options():
 
 def test_unload_calls_chat_with_keep_alive_zero():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         service.unload()
 
@@ -91,7 +99,7 @@ def test_unload_calls_chat_with_keep_alive_zero():
 def test_unload_swallows_exception():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.side_effect = ConnectionError("no ollama")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         service.unload()  # should not raise
 
@@ -153,7 +161,7 @@ def test_is_safe_default_threshold_rejects_below_constant():
 def test_cleanup_returns_llm_output_when_guard_passes():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("Dzisiaj pojechałem do sklepu.")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         result = service.cleanup("dzisiaj pojechałem do sklepu", "pl")
 
@@ -163,7 +171,7 @@ def test_cleanup_returns_llm_output_when_guard_passes():
 def test_cleanup_falls_back_to_regexed_when_guard_rejects():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("zupełnie inny halucynowany tekst bez sensu")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
 
@@ -173,7 +181,7 @@ def test_cleanup_falls_back_to_regexed_when_guard_rejects():
 def test_cleanup_strips_filler_then_returns_conservative_llm_output():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("No test")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         result = service.cleanup("eee no test", "pl")
 
@@ -185,7 +193,7 @@ def test_cleanup_strips_filler_then_returns_conservative_llm_output():
 def test_cleanup_falls_back_to_regexed_on_exception():
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.side_effect = ConnectionError("no ollama")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         result = service.cleanup("dzisiaj eee pojechałem do sklepu", "pl")
 
@@ -195,7 +203,7 @@ def test_cleanup_falls_back_to_regexed_on_exception():
 def test_cleanup_logs_ratio_on_guard_rejection(caplog):
     with patch("talk2type.services.cleanup.chat") as mock_chat:
         mock_chat.return_value = _mock_response("zupełnie inny halucynowany tekst bez sensu")
-        service = CleanupService()
+        service = CleanupService(enabled=True)
 
         with caplog.at_level(logging.INFO, logger="talk2type.services.cleanup"):
             service.cleanup("dzisiaj pojechałem do sklepu", "pl")
