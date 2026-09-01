@@ -28,6 +28,11 @@ WHISPER_HOTWORDS = [
     "Matt Pocock",
     "Bedrock",
     "GenAI",
+    "TUiR",
+    "Chaos Gears",
+    "LMG",
+    "grill-with-docs",
+    "dev",
 ]
 
 OLLAMA_MODEL = "qwen3.5:2b"
