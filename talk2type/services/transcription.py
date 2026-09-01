@@ -75,6 +75,9 @@ class TranscriptionService:
             beam_size=5,
             vad_filter=True,
             hotwords=self._hotwords,
+            condition_on_previous_text=False,
+            temperature=0.0,
+            no_speech_threshold=0.4,
         )
         return "".join(seg.text for seg in segments).strip()
 

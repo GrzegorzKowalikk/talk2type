@@ -9,8 +9,8 @@ IMAGES_DIR = Path(__file__).resolve().parent.parent / "images"
 ICON_ICO = IMAGES_DIR / "icon.ico"
 APP_ID = "talk2type"
 
-WHISPER_MODEL = "turbo"
-WHISPER_COMPUTE = "int8_float16"
+WHISPER_MODEL = "large-v3"
+WHISPER_COMPUTE = "float16"
 WHISPER_DEVICE = "cuda"
 
 # Words Whisper often mishears — listed here so beam search favours correct spelling.
