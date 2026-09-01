@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 from sqlmodel import SQLModel, Session, create_engine
 
+from talk2type.config import WHISPER_HOTWORDS
 from talk2type.db.model import Hotword  # noqa: F401 -- registers metadata
 
 
@@ -74,11 +75,11 @@ def test_refresh_loads_hotwords_from_db(qt_app):
 
 
 def test_add_word_via_input(dict_page):
-    # dict_page starts with 3 seeded hotwords from config
+    # dict_page starts with the config-seeded hotwords
     dict_page.input.setText("NewWord")
     dict_page.add_word()
 
-    assert dict_page.word_list.count() == 4
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS) + 1
     texts = [dict_page.word_list.item(i).data(256) for i in range(dict_page.word_list.count())]
     assert "NewWord" in texts
     assert dict_page.input.text() == ""  # cleared after add
@@ -88,28 +89,28 @@ def test_add_word_ignores_empty(dict_page):
     dict_page.input.setText("  ")
     dict_page.add_word()
 
-    # still just the 3 seeded items
-    assert dict_page.word_list.count() == 3
+    # still just the seeded items
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS)
 
 
 def test_add_word_ignores_duplicate(dict_page):
     dict_page.input.setText("Claude")
     dict_page.add_word()
-    assert dict_page.word_list.count() == 3  # Claude already seeded
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS)  # Claude already seeded
 
     dict_page.input.setText("Claude")
     dict_page.add_word()
-    assert dict_page.word_list.count() == 3  # no duplicate
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS)  # no duplicate
 
 
 # --- Remove hotword via UI ---
 
 
 def test_remove_word(dict_page):
-    # dict_page starts with 3 seeded hotwords
+    # dict_page starts with the config-seeded hotwords
     dict_page.input.setText("TestWord")
     dict_page.add_word()
-    assert dict_page.word_list.count() == 4
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS) + 1
 
     # Find the id of the newly added "TestWord"
     for i in range(dict_page.word_list.count()):
@@ -118,7 +119,7 @@ def test_remove_word(dict_page):
             break
 
     dict_page.remove_word(word_id)
-    assert dict_page.word_list.count() == 3
+    assert dict_page.word_list.count() == len(WHISPER_HOTWORDS)
 
 
 # --- Seed from config on first launch ---
@@ -138,7 +139,7 @@ def test_seed_from_config_when_db_empty(qt_app):
         w = DictionaryPage()
 
     # After construction, config hotwords should be seeded
-    assert w.word_list.count() == 3
+    assert w.word_list.count() == len(WHISPER_HOTWORDS)
     texts = [w.word_list.item(i).data(256) for i in range(w.word_list.count())]
     assert "Claude" in texts
     assert "Claude Code" in texts

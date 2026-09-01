@@ -18,6 +18,16 @@ WHISPER_HOTWORDS = [
     "Claude",
     "Claude Code",
     "Anthropic",
+    "Talk2Type",
+    "CLAUDE.md",
+    "claude-mem",
+    "Terragrunt",
+    "Obsidian",
+    "Graphify",
+    "eval",
+    "Matt Pocock",
+    "Bedrock",
+    "GenAI",
 ]
 
 OLLAMA_MODEL = "qwen3.5:2b"
