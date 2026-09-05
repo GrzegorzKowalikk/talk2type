@@ -2,7 +2,7 @@ import collections
 import ctypes
 
 from PySide6.QtCore import Qt, QTimer, Slot
-from PySide6.QtGui import QColor, QCursor, QFont, QGuiApplication, QPainter, QPainterPath
+from PySide6.QtGui import QColor, QCursor, QFont, QFontMetrics, QGuiApplication, QPainter, QPainterPath
 from PySide6.QtWidgets import QApplication, QWidget
 
 _BARS = 28
@@ -53,6 +53,8 @@ class OverlayWindow(QWidget):
         self._rms: collections.deque[float] = collections.deque([0.0] * _BARS, maxlen=_BARS)
         self._alpha = 255
         self._tick = 0
+        self._progress_label = ""
+        self._progress_detail = ""
 
         self._wave_timer = QTimer(self)
         self._wave_timer.setInterval(50)
@@ -81,6 +83,8 @@ class OverlayWindow(QWidget):
         self._lang = lang.upper()
         self._alpha = 255
         self._tick = 0
+        self._progress_label = ""
+        self._progress_detail = ""
         self._pulse_timer.start()
         self._wave_timer.start()
         self._reposition()
@@ -91,6 +95,12 @@ class OverlayWindow(QWidget):
     def on_processing(self):
         self._state = "processing"
         self._wave_timer.stop()
+        self.update()
+
+    @Slot(str, str)
+    def on_progress(self, label: str, detail: str):
+        self._progress_label = label
+        self._progress_detail = detail
         self.update()
 
     @Slot(str)
@@ -168,10 +178,59 @@ class OverlayWindow(QWidget):
             p.drawRoundedRect(x, y, _BAR_W, h, 1, 1)
 
     def _paint_processing(self, p: QPainter):
-        p.setPen(Qt.PenStyle.NoPen)
-        cy = _M + _H // 2 - 3
-        cx = _M + _W // 2 - 14
-        for i in range(3):
-            alpha = 255 if self._tick % 3 == i else 80
-            p.setBrush(QColor(255, 255, 255, alpha))
-            p.drawEllipse(cx + i * 12, cy, 6, 6)
+        detail_text = f"({self._progress_detail})" if self._progress_detail else ""
+
+        if self._progress_label.startswith("Przetwarzam") or not self._progress_label:
+            # 3 animated dots + detail text
+            dots_w = 34
+            font = QFont("Segoe UI", 8, QFont.Weight.DemiBold)
+            p.setFont(font)
+            fm = QFontMetrics(font)
+            text_w = fm.horizontalAdvance(detail_text) if detail_text else 0
+            
+            total_w = dots_w + (6 + text_w if text_w else 0)
+            start_x = _M + (_W - total_w) // 2
+            
+            # Draw dots
+            p.setPen(Qt.PenStyle.NoPen)
+            cy = _M + _H // 2 - 3
+            cx = start_x
+            for i in range(3):
+                alpha = 255 if self._tick % 3 == i else 80
+                p.setBrush(QColor(255, 255, 255, alpha))
+                p.drawEllipse(cx + i * 12, cy, 6, 6)
+                
+            # Draw detail
+            if detail_text:
+                p.setPen(_FG_DIM)
+                p.drawText(
+                    cx + dots_w + 6, _M, text_w, _H,
+                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                    detail_text,
+                )
+        else:
+            # Draw label + detail (e.g. Pobieram... (1.2/3.1 GB))
+            font = QFont("Segoe UI", 8, QFont.Weight.DemiBold)
+            p.setFont(font)
+            fm = QFontMetrics(font)
+
+            full_text = f"{self._progress_label} {detail_text}".rstrip()
+            text_w = fm.horizontalAdvance(full_text)
+            text_x = _M + (_W - text_w) // 2
+
+            # Main label in white
+            p.setPen(_FG)
+            p.drawText(
+                text_x, _M, text_w, _H,
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                self._progress_label,
+            )
+            # Detail in dim
+            if detail_text:
+                label_w = fm.horizontalAdvance(self._progress_label + " ")
+                p.setPen(_FG_DIM)
+                p.drawText(
+                    text_x + label_w, _M, fm.horizontalAdvance(detail_text), _H,
+                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                    detail_text,
+                )

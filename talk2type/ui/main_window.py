@@ -14,6 +14,7 @@ from talk2type.ui.pages.dictionary import DictionaryPage
 from talk2type.ui.pages.history import HistoryPage
 from talk2type.ui.pages.home import HomePage
 from talk2type.ui.pages.notes import NotesPage
+from talk2type.ui.pages.settings import SettingsPage
 from talk2type.ui.pages.snippets import SnippetsPage
 
 DARK_BG = "#1e1e2e"
@@ -22,7 +23,7 @@ TEXT = "#cdd6f4"
 SUBTEXT = "#a6adc8"
 ACCENT = "#89b4fa"
 
-_PAGES = ["Home", "History", "Dictionary", "Snippets", "Notes"]
+_PAGES = ["Home", "History", "Dictionary", "Snippets", "Notes", "Settings"]
 
 _QSS = f"""
 QMainWindow {{
@@ -123,9 +124,10 @@ class MainWindow(QMainWindow):
         self.dictionary_page = DictionaryPage()
         self.snippets_page = SnippetsPage()
         self.notes_page = NotesPage()
+        self.settings_page = SettingsPage()
 
         for page in (self.home_page, self.history_page, self.dictionary_page,
-                     self.snippets_page, self.notes_page):
+                     self.snippets_page, self.notes_page, self.settings_page):
             self._stack.addWidget(page)
         h.addWidget(self._stack)
 
