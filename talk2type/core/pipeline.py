@@ -29,6 +29,11 @@ class DictationPipeline:
         # sequentially); workers get their token as an argument, not via this attr
         self._token: CancellationToken | None = None
 
+        self._transcription.set_progress_callback(self._on_model_progress)
+
+    def _on_model_progress(self, label: str, detail: str) -> None:
+        self._machine.processing_progress.emit(label, detail)
+
     # --- events (pynput thread) ---
 
     def on_press(self, lang: str) -> None:
@@ -100,3 +105,4 @@ class DictationPipeline:
         else:
             if not token.cancelled:
                 self._machine.finish("done")
+

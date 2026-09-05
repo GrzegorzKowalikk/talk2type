@@ -20,6 +20,7 @@ class DictationStateMachine(QObject):
 
     recording_started = Signal(str)   # lang
     processing_started = Signal()
+    processing_progress = Signal(str, str)  # label, detail (e.g. "45%" or "1.2/3.1 GB")
     returned_to_idle = Signal(str)    # reason: done | cancelled | error | too_short
 
     def __init__(self):

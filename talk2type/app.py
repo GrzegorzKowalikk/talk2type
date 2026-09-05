@@ -50,17 +50,32 @@ class App:
             level_callback=self._overlay.push_rms,
             on_activity=self._resmgr.mark_activity,
         )
+
+        from talk2type.config import HOTKEY_EN, HOTKEY_PL
+        from talk2type.db.engine import get_session
+        from talk2type.db.model import Setting
+
+        with get_session() as s:
+            pl_set = s.get(Setting, "hotkey_pl")
+            en_set = s.get(Setting, "hotkey_en")
+            pl_key = pl_set.value if pl_set else HOTKEY_PL
+            en_key = en_set.value if en_set else HOTKEY_EN
+
         self._hotkey = HotkeyListener(
             on_start=self._pipeline.on_press,
             on_stop=self._pipeline.on_release,
             on_cancel=self._pipeline.on_cancel,
+            init_pl=pl_key,
+            init_en=en_key,
         )
+        self._window.settings_page.set_initial_keys(pl_key, en_key)
+
         self._tray = Tray(
             on_quit=lambda: QTimer.singleShot(0, self._qt, self.shutdown),
             on_open=lambda: QTimer.singleShot(0, self._qt, self._window.bring_to_front),
         )
         self._connect_signals()
-        log.info("App initialized -- F9=PL, F10=EN, Esc=cancel")
+        log.info(f"App initialized -- PL={pl_key}, EN={en_key}, Esc=cancel")
 
     def _acquire_single_instance(self) -> bool:
         kernel32 = ctypes.windll.kernel32
@@ -71,10 +86,34 @@ class App:
     def _connect_signals(self):
         self._machine.recording_started.connect(self._overlay.on_recording)
         self._machine.processing_started.connect(self._overlay.on_processing)
+        self._machine.processing_progress.connect(self._overlay.on_progress)
         self._machine.returned_to_idle.connect(self._overlay.on_idle)
         self._window.dictionary_page.hotwords_changed.connect(
             self._transcription.refresh_hotwords
         )
+        self._window.settings_page.settings_changed.connect(self._on_settings_changed)
+
+    def _on_settings_changed(self, pl_key: str, en_key: str):
+        log.info(f"Hotkeys updated -- PL={pl_key}, EN={en_key}")
+        self._hotkey.update_keys(pl_key, en_key)
+        
+        from talk2type.db.engine import get_session
+        from talk2type.db.model import Setting
+
+        with get_session() as s:
+            pl_set = s.get(Setting, "hotkey_pl")
+            if pl_set:
+                pl_set.value = pl_key
+            else:
+                pl_set = Setting(key="hotkey_pl", value=pl_key)
+            s.add(pl_set)
+
+            en_set = s.get(Setting, "hotkey_en")
+            if en_set:
+                en_set.value = en_key
+            else:
+                en_set = Setting(key="hotkey_en", value=en_key)
+            s.add(en_set)
 
     def _unload_models(self):
         self._transcription.unload()

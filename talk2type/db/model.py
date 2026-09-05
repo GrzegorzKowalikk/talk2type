@@ -28,3 +28,8 @@ class Note(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
     body: str = ""
+
+
+class Setting(SQLModel, table=True):
+    key: str = Field(primary_key=True)
+    value: str
