@@ -58,9 +58,12 @@ class TranscriptionService:
         with self._load_lock:
             if self._model is None:
                 t0 = time.monotonic()
-                self._model = WhisperModel(
-                    WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
-                )
+                kwargs = dict(device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE)
+                try:
+                    self._model = WhisperModel(WHISPER_MODEL, local_files_only=True, **kwargs)
+                except Exception:
+                    log.info("Whisper not in cache -- downloading")
+                    self._model = WhisperModel(WHISPER_MODEL, **kwargs)
                 log.info(
                     "Whisper loaded (%s, %s) in %.1fs",
                     WHISPER_MODEL, WHISPER_COMPUTE, time.monotonic() - t0,

@@ -287,3 +287,16 @@ def test_stop_discards_running_result_and_rejects_new_recordings(deps):
         release.set()
     assert finished.wait(2)
     deps["paste"].paste.assert_not_called()
+
+
+def test_warmup_preloads_and_releases_models(deps):
+    users = []
+    deps["begin_use"] = lambda: users.append(1)
+    deps["end_use"] = lambda: users.pop()
+    pipeline = DictationPipeline(**deps)
+    pipeline.warmup()
+    deadline = time.monotonic() + 2.0
+    while (not deps["transcription"].preload.called or users) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    deps["transcription"].preload.assert_called_once()
+    assert users == []

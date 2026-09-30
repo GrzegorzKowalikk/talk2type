@@ -82,6 +82,7 @@ class App:
 
     def run(self):
         self._resmgr.start()
+        self._pipeline.warmup()
         self._hotkey.start()
         signal.signal(signal.SIGINT, lambda *_: self.shutdown())
         sigint_timer = QTimer()

@@ -91,6 +91,9 @@ class DictationPipeline:
             elif prev is State.PROCESSING and self._token is not None:
                 log.info("Processing cancelled -- result will be discarded")
 
+    def warmup(self) -> None:
+        self._submit(self._preload, (), threading.Event())
+
     def stop(self) -> None:
         with self._event_lock:
             self._stopped = True
