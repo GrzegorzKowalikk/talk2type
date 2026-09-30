@@ -19,9 +19,5 @@ def get_engine():
 @contextmanager
 def get_session() -> Generator[Session, None, None]:
     with Session(get_engine()) as session:
-        try:
-            yield session
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
+        yield session
+        session.commit()

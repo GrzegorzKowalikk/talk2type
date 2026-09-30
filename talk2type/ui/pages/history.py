@@ -19,112 +19,15 @@ from talk2type.db.model import Transcription
 from talk2type.db.repository import TranscriptionRepository
 from talk2type.ui.detail_dialog import TranscriptionDetailDialog
 
-DARK_BG = "#1e1e2e"
-DARKER_BG = "#11111b"
-TEXT = "#cdd6f4"
-ACCENT = "#89b4fa"
-INPUT_BG = "#313244"
-HOVER = "#45475a"
-SELECTED = "#585b70"
-
 _HEADER_ROLE = Qt.ItemDataRole.UserRole + 1
 _ID_ROLE = Qt.ItemDataRole.UserRole + 2
 
-_QSS = f"""
-QWidget {{
-    background-color: {DARK_BG};
-}}
-QLineEdit {{
-    background-color: {INPUT_BG};
-    color: {TEXT};
-    border: 1px solid {HOVER};
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-}}
-QLineEdit:focus {{
-    border-color: {ACCENT};
-}}
-QPushButton {{
-    background-color: {INPUT_BG};
-    color: {TEXT};
-    border: 1px solid {HOVER};
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 13px;
-}}
-QPushButton:hover {{
-    background-color: {HOVER};
-}}
-QListWidget {{
-    background-color: {DARKER_BG};
-    color: {TEXT};
-    border: none;
-    outline: none;
-    font-size: 13px;
-}}
-QListWidget::item {{
-    padding: 8px 12px;
-    border-bottom: 1px solid {HOVER};
-}}
-QListWidget::item:hover {{
-    background-color: {HOVER};
-}}
-QListWidget::item:selected {{
-    background-color: {SELECTED};
-}}
-QScrollBar:vertical {{
-    background: {DARK_BG};
-    width: 8px;
-    border-radius: 4px;
-    margin: 0;
-}}
-QScrollBar::handle:vertical {{
-    background: {SELECTED};
-    border-radius: 4px;
-    min-height: 24px;
-}}
-QScrollBar::handle:vertical:hover {{
-    background: {ACCENT};
-}}
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {{
-    height: 0;
-}}
-QScrollBar::add-page:vertical,
-QScrollBar::sub-page:vertical {{
-    background: none;
-}}
-QScrollBar:horizontal {{
-    background: {DARK_BG};
-    height: 8px;
-    border-radius: 4px;
-    margin: 0;
-}}
-QScrollBar::handle:horizontal {{
-    background: {SELECTED};
-    border-radius: 4px;
-    min-width: 24px;
-}}
-QScrollBar::handle:horizontal:hover {{
-    background: {ACCENT};
-}}
-QScrollBar::add-line:horizontal,
-QScrollBar::sub-line:horizontal {{
-    width: 0;
-}}
-QScrollBar::add-page:horizontal,
-QScrollBar::sub-page:horizontal {{
-    background: none;
-}}
-"""
 
 
 class HistoryPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("history_page")
-        self.setStyleSheet(_QSS)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)

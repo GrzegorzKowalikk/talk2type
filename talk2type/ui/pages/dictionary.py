@@ -16,66 +16,11 @@ from sqlmodel import select
 from talk2type.config import WHISPER_HOTWORDS
 from talk2type.db.engine import get_session
 from talk2type.db.model import Hotword
-
-DARK_BG = "#1e1e2e"
-DARKER_BG = "#11111b"
-TEXT = "#cdd6f4"
-SUBTEXT = "#a6adc8"
-ACCENT = "#89b4fa"
-INPUT_BG = "#313244"
-HOVER = "#45475a"
-SELECTED = "#585b70"
+from talk2type.ui.theme import SUBTEXT, TEXT
 
 _WORD_DATA = 256  # Qt.ItemDataRole.UserRole
 _ID_DATA = 257
 
-_QSS = f"""
-QLabel {{
-    color: {TEXT};
-    font-family: "Segoe UI", sans-serif;
-}}
-QLineEdit {{
-    background-color: {INPUT_BG};
-    color: {TEXT};
-    border: 1px solid #45475a;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
-}}
-QLineEdit:focus {{
-    border-color: {ACCENT};
-}}
-QListWidget {{
-    background-color: {DARKER_BG};
-    color: {TEXT};
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 4px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
-    outline: none;
-}}
-QListWidget::item {{
-    padding: 10px 12px;
-    border-bottom: 1px solid #313244;
-}}
-QListWidget::item:last-child {{
-    border-bottom: none;
-}}
-QPushButton {{
-    background-color: transparent;
-    color: {SUBTEXT};
-    border: none;
-    font-size: 16px;
-    padding: 4px 8px;
-    border-radius: 4px;
-}}
-QPushButton:hover {{
-    background-color: #45475a;
-    color: #f38ba8;
-}}
-"""
 
 
 class DictionaryPage(QWidget):
@@ -83,7 +28,6 @@ class DictionaryPage(QWidget):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setStyleSheet(_QSS)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(32, 24, 32, 24)

@@ -7,10 +7,7 @@ from talk2type.config import SAMPLE_RATE, CHANNELS, DTYPE
 
 
 class AudioRecorder:
-    def __init__(self, sample_rate=SAMPLE_RATE, channels=CHANNELS, dtype=DTYPE):
-        self.sample_rate = sample_rate
-        self.channels = channels
-        self.dtype = dtype
+    def __init__(self):
         self._q: queue.Queue | None = None
         self._stream = None
 
@@ -24,9 +21,9 @@ class AudioRecorder:
                 level_callback(float(np.sqrt(np.mean(indata ** 2))))
 
         self._stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype=self.dtype,
+            samplerate=SAMPLE_RATE,
+            channels=CHANNELS,
+            dtype=DTYPE,
             callback=_cb,
         )
         self._stream.start()

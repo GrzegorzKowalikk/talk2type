@@ -2,7 +2,6 @@ import os
 
 from talk2type.db.engine import get_session
 from talk2type.db.model import Transcription
-from talk2type.db.repository import TranscriptionRepository
 
 
 def _get_active_app() -> str | None:
@@ -29,4 +28,4 @@ def save_transcription(raw: str, cleaned: str, stt_ms: int, llm_ms: int) -> None
     app = _get_active_app()
     record = Transcription(raw=raw, cleaned=cleaned, app=app, stt_ms=stt_ms, llm_ms=llm_ms)
     with get_session() as session:
-        TranscriptionRepository(session).insert(record)
+        session.add(record)

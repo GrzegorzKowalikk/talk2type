@@ -17,7 +17,6 @@ def deps():
         "cleanup": MagicMock(),
         "paste": MagicMock(),
         "level_callback": MagicMock(),
-        "on_activity": MagicMock(),
     }
 
 

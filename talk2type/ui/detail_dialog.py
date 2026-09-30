@@ -14,46 +14,6 @@ from PySide6.QtWidgets import (
 from talk2type.db.engine import get_session
 from talk2type.db.model import Transcription
 
-_DARK_BG = "#1e1e2e"
-_DARKER_BG = "#11111b"
-_TEXT = "#cdd6f4"
-_SUBTEXT = "#a6adc8"
-_ACCENT = "#89b4fa"
-_INPUT_BG = "#313244"
-_HOVER = "#45475a"
-
-_QSS = f"""
-QDialog {{
-    background-color: {_DARK_BG};
-}}
-QLabel {{
-    color: {_SUBTEXT};
-    font-family: "Segoe UI", sans-serif;
-    font-size: 12px;
-    background: transparent;
-}}
-QTextEdit {{
-    background-color: {_DARKER_BG};
-    color: {_TEXT};
-    border: 1px solid {_HOVER};
-    border-radius: 6px;
-    padding: 10px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-}}
-QPushButton {{
-    background-color: {_INPUT_BG};
-    color: {_TEXT};
-    border: 1px solid {_HOVER};
-    border-radius: 6px;
-    padding: 6px 16px;
-    font-size: 13px;
-}}
-QPushButton:hover {{
-    background-color: {_HOVER};
-}}
-"""
 
 
 class TranscriptionDetailDialog(QDialog):
@@ -62,7 +22,6 @@ class TranscriptionDetailDialog(QDialog):
         self.setWindowTitle("Transcription")
         self.setMinimumWidth(580)
         self.setMinimumHeight(300)
-        self.setStyleSheet(_QSS)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         with get_session() as session:

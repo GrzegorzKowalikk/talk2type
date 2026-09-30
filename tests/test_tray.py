@@ -1,84 +1,63 @@
-from unittest.mock import MagicMock, patch
+import sys
+from unittest.mock import MagicMock
 
 import pytest
 
 
+@pytest.fixture(scope="session")
+def qt_app():
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    yield app
+
+
 @pytest.fixture
-def tray_deps():
-    """Patch heavy deps so Tray can be instantiated without a display."""
-    with (
-        patch("talk2type.ui.tray.Image") as mock_img,
-        patch("talk2type.ui.tray.Icon") as mock_icon_cls,
-        patch("talk2type.ui.tray.Menu") as mock_menu_cls,
-        patch("talk2type.ui.tray.MenuItem") as mock_menuitem_cls,
-    ):
-        yield {
-            "Image": mock_img,
-            "Icon": mock_icon_cls,
-            "Menu": mock_menu_cls,
-            "MenuItem": mock_menuitem_cls,
-        }
-
-
-def test_tray_accepts_on_open(tray_deps):
+def make_tray(qt_app):
     from talk2type.ui.tray import Tray
 
+    trays = []
+
+    def _make(**kw):
+        t = Tray(**kw)
+        trays.append(t)
+        return t
+
+    yield _make
+    for t in trays:
+        t._icon.hide()
+
+
+def _actions(tray):
+    return {a.text(): a for a in tray._icon.contextMenu().actions()}
+
+
+def test_menu_has_open_then_quit(make_tray):
+    tray = make_tray(on_quit=MagicMock(), on_open=MagicMock())
+    assert list(_actions(tray)) == ["Open", "Quit"]
+
+
+def test_open_action_calls_on_open(make_tray):
     on_open = MagicMock()
-    on_quit = MagicMock()
-    Tray(on_quit=on_quit, on_open=on_open)
-
-    # MenuItem was called at least once with "Open"
-    calls = [c.args[0] for c in tray_deps["MenuItem"].call_args_list]
-    assert "Open" in calls
-
-
-def test_open_callback_wired(tray_deps):
-    from talk2type.ui.tray import Tray
-
-    on_open = MagicMock()
-    on_quit = MagicMock()
-    Tray(on_quit=on_quit, on_open=on_open)
-
-    # Find the MenuItem("Open", ...) call and invoke its callback
-    open_call = None
-    for c in tray_deps["MenuItem"].call_args_list:
-        if c.args[0] == "Open":
-            open_call = c
-            break
-    assert open_call is not None, "No 'Open' MenuItem found"
-
-    callback = open_call.args[1]
-    icon_stub = MagicMock()
-    callback(icon_stub, None)
+    tray = make_tray(on_quit=MagicMock(), on_open=on_open)
+    _actions(tray)["Open"].trigger()
     on_open.assert_called_once()
 
 
-def test_quit_callback_still_works(tray_deps):
-    from talk2type.ui.tray import Tray
-
+def test_quit_action_calls_on_quit(make_tray):
     on_quit = MagicMock()
-    Tray(on_quit=on_quit, on_open=MagicMock())
-
-    quit_call = None
-    for c in tray_deps["MenuItem"].call_args_list:
-        if c.args[0] == "Quit":
-            quit_call = c
-            break
-    assert quit_call is not None, "No 'Quit' MenuItem found"
-
-    callback = quit_call.args[1]
-    icon_stub = MagicMock()
-    callback(icon_stub, None)
+    tray = make_tray(on_quit=on_quit, on_open=MagicMock())
+    _actions(tray)["Quit"].trigger()
     on_quit.assert_called_once()
 
 
-def test_menu_has_both_items(tray_deps):
-    from talk2type.ui.tray import Tray
+def test_left_click_opens_context_does_not(make_tray):
+    from PySide6.QtWidgets import QSystemTrayIcon
 
-    Tray(on_quit=MagicMock(), on_open=MagicMock())
-
-    item_names = [c.args[0] for c in tray_deps["MenuItem"].call_args_list]
-    assert "Open" in item_names
-    assert "Quit" in item_names
-    # Open should appear before Quit in the call list
-    assert item_names.index("Open") < item_names.index("Quit")
+    on_open = MagicMock()
+    tray = make_tray(on_quit=MagicMock(), on_open=on_open)
+    tray._icon.activated.emit(QSystemTrayIcon.ActivationReason.Trigger)
+    tray._icon.activated.emit(QSystemTrayIcon.ActivationReason.Context)
+    on_open.assert_called_once()

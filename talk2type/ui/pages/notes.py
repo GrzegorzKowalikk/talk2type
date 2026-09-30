@@ -16,79 +16,8 @@ from sqlmodel import select
 
 from talk2type.db.engine import get_session
 from talk2type.db.model import Note
+from talk2type.ui.theme import TEXT
 
-DARK_BG = "#1e1e2e"
-DARKER_BG = "#11111b"
-TEXT = "#cdd6f4"
-ACCENT = "#89b4fa"
-INPUT_BG = "#313244"
-HOVER = "#45475a"
-SELECTED = "#585b70"
-
-_QSS = f"""
-QLabel {{
-    color: {TEXT};
-    font-family: "Segoe UI", sans-serif;
-}}
-QPushButton {{
-    color: {TEXT};
-    background-color: {INPUT_BG};
-    border: 1px solid #45475a;
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 13px;
-}}
-QPushButton:hover {{
-    background-color: {HOVER};
-}}
-QLineEdit {{
-    color: {TEXT};
-    background-color: {INPUT_BG};
-    border: 1px solid #45475a;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 13px;
-}}
-QLineEdit:focus {{
-    border-color: {ACCENT};
-}}
-QListWidget {{
-    background-color: {DARKER_BG};
-    color: {TEXT};
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 4px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 13px;
-    outline: none;
-}}
-QListWidget::item {{
-    padding: 8px 6px;
-    border-bottom: 1px solid #313244;
-    border-radius: 4px;
-}}
-QListWidget::item:last-child {{
-    border-bottom: none;
-}}
-QListWidget::item:selected {{
-    background-color: {SELECTED};
-}}
-QListWidget::item:hover {{
-    background-color: {HOVER};
-}}
-QPlainTextEdit {{
-    color: {TEXT};
-    background-color: {DARKER_BG};
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 12px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
-    outline: none;
-}}
-"""
 
 _DEBOUNCE_MS = 500
 
@@ -96,7 +25,6 @@ _DEBOUNCE_MS = 500
 class NotesPage(QWidget):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setStyleSheet(_QSS)
         self._current_id: int | None = None
         self._all_notes: list[Note] = []
         self._save_timer = QTimer(self)
@@ -110,7 +38,6 @@ class NotesPage(QWidget):
         # --- Left panel ---
         left = QWidget()
         left.setFixedWidth(250)
-        left.setStyleSheet(f"background-color: {DARK_BG};")
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(12, 16, 12, 12)
         left_layout.setSpacing(8)
@@ -143,7 +70,6 @@ class NotesPage(QWidget):
 
         # --- Right panel ---
         right = QWidget()
-        right.setStyleSheet(f"background-color: {DARK_BG};")
         right_layout = QVBoxLayout(right)
         right_layout.setContentsMargins(20, 16, 20, 16)
         right_layout.setSpacing(12)

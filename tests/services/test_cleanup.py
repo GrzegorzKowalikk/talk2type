@@ -5,9 +5,8 @@ import pytest
 
 from talk2type.prompts import SYSTEM_EN, SYSTEM_PL
 from talk2type.services.cleanup import (
-    GUARD_THRESHOLD,
     CleanupService,
-    is_safe,
+    _ratio,
     strip_fillers,
 )
 
@@ -144,18 +143,8 @@ def test_strip_fillers(text, expected):
         ("", "", True),
     ],
 )
-def test_is_safe(before, after, expected):
-    assert is_safe(before, after) is expected
-
-
-def test_guard_threshold_default():
-    assert GUARD_THRESHOLD == 0.70
-
-
-def test_is_safe_default_threshold_rejects_below_constant():
-    # ratio 0.667: below the 0.70 default, accepted only with a lower explicit threshold
-    assert is_safe("a b c", "a b X") is False
-    assert is_safe("a b c", "a b X", threshold=0.5) is True
+def test_ratio_guard(before, after, expected):
+    assert (_ratio(before, after) >= 0.70) is expected
 
 
 def test_cleanup_returns_llm_output_when_guard_passes():

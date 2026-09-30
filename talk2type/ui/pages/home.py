@@ -14,81 +14,15 @@ from PySide6.QtWidgets import (
 from talk2type.db.engine import get_session
 from talk2type.db.repository import TranscriptionRepository
 from talk2type.ui.detail_dialog import TranscriptionDetailDialog
+from talk2type.ui.theme import ACCENT, SUBTEXT, TEXT
 
 _ID_ROLE = Qt.ItemDataRole.UserRole
 
-DARK_BG = "#1e1e2e"
-DARKER_BG = "#11111b"
-CARD_BG = "#181825"
-TEXT = "#cdd6f4"
-SUBTEXT = "#a6adc8"
-ACCENT = "#89b4fa"
-
-_QSS = f"""
-QLabel {{
-    color: {TEXT};
-    font-family: "Segoe UI", sans-serif;
-}}
-QListWidget {{
-    background-color: {DARKER_BG};
-    color: {TEXT};
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 8px;
-    font-family: "Segoe UI", sans-serif;
-    font-size: 13px;
-    outline: none;
-}}
-QListWidget::item {{
-    padding: 6px 4px;
-    border-bottom: 1px solid #313244;
-}}
-QListWidget::item:last-child {{
-    border-bottom: none;
-}}
-QScrollBar:vertical {{
-    background: {DARKER_BG};
-    width: 8px;
-    border-radius: 4px;
-    margin: 0;
-}}
-QScrollBar::handle:vertical {{
-    background: #585b70;
-    border-radius: 4px;
-    min-height: 24px;
-}}
-QScrollBar::handle:vertical:hover {{
-    background: {ACCENT};
-}}
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {{
-    height: 0;
-}}
-QScrollBar::add-page:vertical,
-QScrollBar::sub-page:vertical {{
-    background: none;
-}}
-QFrame#stat_card {{
-    background-color: {CARD_BG};
-    border: 1px solid #313244;
-    border-radius: 12px;
-    padding: 16px;
-}}
-"""
 
 
 def _stat_card(value: str, label: str) -> QFrame:
     card = QFrame()
     card.setObjectName("stat_card")
-    card.setStyleSheet(
-        f"""
-        QFrame#stat_card {{
-            background-color: {CARD_BG};
-            border: 1px solid #313244;
-            border-radius: 12px;
-        }}
-        """
-    )
     layout = QVBoxLayout(card)
     layout.setContentsMargins(20, 16, 20, 16)
     layout.setSpacing(4)
@@ -114,7 +48,6 @@ def _stat_card(value: str, label: str) -> QFrame:
 class HomePage(QWidget):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setStyleSheet(_QSS)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(32, 24, 32, 24)

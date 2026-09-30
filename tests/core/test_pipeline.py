@@ -19,7 +19,6 @@ def deps():
         "cleanup": MagicMock(),
         "paste": MagicMock(),
         "level_callback": MagicMock(),
-        "on_activity": MagicMock(),
     }
 
 
@@ -51,7 +50,6 @@ def test_happy_path(pipeline, deps):
 def test_press_starts_recorder_and_preloads(pipeline, deps):
     pipeline.on_press("pl")
     deps["recorder"].start.assert_called_once_with(level_callback=deps["level_callback"])
-    deps["on_activity"].assert_called_once()
     deadline = time.monotonic() + 2.0
     while not deps["transcription"].preload.called and time.monotonic() < deadline:
         time.sleep(0.01)

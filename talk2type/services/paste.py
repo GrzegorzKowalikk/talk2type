@@ -1,6 +1,7 @@
 import time
 
-import pyperclip
+import win32clipboard
+import win32con
 from pynput.keyboard import Controller, Key
 
 
@@ -11,7 +12,12 @@ class PasteService:
     def paste(self, text: str) -> None:
         if not text:
             return
-        pyperclip.copy(text)
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardText(text, win32con.CF_UNICODETEXT)
+        finally:
+            win32clipboard.CloseClipboard()
         time.sleep(0.05)
         with self._kb.pressed(Key.ctrl):
             self._kb.press("v")

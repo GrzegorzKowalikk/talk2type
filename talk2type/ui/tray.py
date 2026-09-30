@@ -1,27 +1,18 @@
-import threading
-from pathlib import Path
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
-from PIL import Image
-from pystray import Icon, Menu, MenuItem
-
-_IMAGES_DIR = Path(__file__).parent.parent.parent / "images"
+from talk2type.config import ICON_ICO
 
 
 class Tray:
-    def __init__(self, on_quit, *, on_open=None):
-        menu_items = []
-        if on_open is not None:
-            menu_items.append(MenuItem("Open", lambda i, _: on_open(), default=True))
-        menu_items.append(MenuItem("Quit", lambda i, _: (on_quit(), i.stop())))
-        self._icon = Icon(
-            "Talk2Type",
-            Image.open(_IMAGES_DIR / "icon.png"),
-            "Talk2Type",
-            Menu(*menu_items),
+    def __init__(self, on_quit, *, on_open):
+        self._menu = QMenu()
+        self._menu.addAction("Open", on_open)
+        self._menu.addAction("Quit", on_quit)
+        self._icon = QSystemTrayIcon(QIcon(str(ICON_ICO)))
+        self._icon.setToolTip("Talk2Type")
+        self._icon.setContextMenu(self._menu)
+        self._icon.activated.connect(
+            lambda reason: reason == QSystemTrayIcon.ActivationReason.Trigger and on_open()
         )
-
-    def run(self):
-        threading.Thread(target=self._icon.run, daemon=True).start()
-
-    def stop(self):
-        self._icon.stop()
+        self._icon.show()

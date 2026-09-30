@@ -22,14 +22,7 @@ def strip_fillers(text: str) -> str:
     return re.sub(r" {2,}", " ", stripped).strip()
 
 
-GUARD_THRESHOLD = 0.70
-
-
-def is_safe(before: str, after: str, threshold: float = GUARD_THRESHOLD) -> bool:
-    return _guard_ratio(before, after) >= threshold
-
-
-def _guard_ratio(before: str, after: str) -> float:
+def _ratio(before: str, after: str) -> float:
     return difflib.SequenceMatcher(
         None, before.lower().split(), after.lower().split()
     ).ratio()
@@ -67,9 +60,10 @@ class CleanupService:
             log.exception("LLM cleanup failed -- returning regex-cleaned text")
             return cleaned
 
-        if is_safe(cleaned, llm_out):
+        ratio = _ratio(cleaned, llm_out)
+        if ratio >= 0.70:
             return llm_out
-        log.info("guard rejected: ratio=%.2f", _guard_ratio(cleaned, llm_out))
+        log.info("guard rejected: ratio=%.2f", ratio)
         return cleaned
 
     def preload(self) -> None:

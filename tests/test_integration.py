@@ -1,7 +1,7 @@
 """Integration tests: MainWindow wired to real pages, tray lifecycle."""
 
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -25,21 +25,10 @@ def test_tray_open_shows_main_window(qt_app):
 
     shown = MagicMock()
 
-    with (
-        patch("talk2type.ui.tray.Image"),
-        patch("talk2type.ui.tray.Icon"),
-        patch("talk2type.ui.tray.Menu"),
-        patch("talk2type.ui.tray.MenuItem") as mi_cls,
-    ):
-        Tray(on_quit=MagicMock(), on_open=shown)
-
-        # Find the "Open" MenuItem call and extract its callback
-        open_call = next(c for c in mi_cls.call_args_list if c.args[0] == "Open")
-        callback = open_call.args[1]
-
-        # Invoke the callback (tray passes icon + item)
-        callback(MagicMock(), None)
-        shown.assert_called_once()
+    tray = Tray(on_quit=MagicMock(), on_open=shown)
+    tray._icon.contextMenu().actions()[0].trigger()
+    shown.assert_called_once()
+    tray._icon.hide()
 
 
 def test_main_window_has_real_page_widgets(qt_app):

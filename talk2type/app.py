@@ -19,6 +19,7 @@ from talk2type.services.paste import PasteService
 from talk2type.services.transcription import TranscriptionService
 from talk2type.ui.main_window import MainWindow
 from talk2type.ui.overlay import OverlayWindow
+from talk2type.ui.theme import QSS
 from talk2type.ui.tray import Tray
 
 log = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class App:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
         self._qt = QApplication(sys.argv)
         self._qt.setWindowIcon(QIcon(str(ICON_ICO)))
+        self._qt.setStyleSheet(QSS)
 
         self._machine = DictationStateMachine()
         self._overlay = OverlayWindow()
@@ -48,7 +50,6 @@ class App:
             cleanup=self._cleanup,
             paste=PasteService(),
             level_callback=self._overlay.push_rms,
-            on_activity=self._resmgr.mark_activity,
             begin_use=self._resmgr.begin_use,
             end_use=self._resmgr.end_use,
         )
@@ -57,10 +58,7 @@ class App:
             on_stop=self._pipeline.on_release,
             on_cancel=self._pipeline.on_cancel,
         )
-        self._tray = Tray(
-            on_quit=lambda: QTimer.singleShot(0, self._qt, self.shutdown),
-            on_open=lambda: QTimer.singleShot(0, self._qt, self._window.bring_to_front),
-        )
+        self._tray = Tray(on_quit=self.shutdown, on_open=self._window.bring_to_front)
         self._connect_signals()
         log.info("App initialized -- F9=PL, F10=EN, Esc=cancel")
 
@@ -83,7 +81,6 @@ class App:
         self._cleanup.unload()
 
     def run(self):
-        self._tray.run()
         self._resmgr.start()
         self._hotkey.start()
         signal.signal(signal.SIGINT, lambda *_: self.shutdown())

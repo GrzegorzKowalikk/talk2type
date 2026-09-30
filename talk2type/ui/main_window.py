@@ -16,60 +16,14 @@ from talk2type.ui.pages.home import HomePage
 from talk2type.ui.pages.notes import NotesPage
 from talk2type.ui.pages.snippets import SnippetsPage
 
-DARK_BG = "#1e1e2e"
-DARKER_BG = "#11111b"
-TEXT = "#cdd6f4"
-SUBTEXT = "#a6adc8"
-ACCENT = "#89b4fa"
-
 _PAGES = ["Home", "History", "Dictionary", "Snippets", "Notes"]
 
-_QSS = f"""
-QMainWindow {{
-    background-color: {DARK_BG};
-}}
-#sidebar {{
-    background-color: {DARKER_BG};
-    border-right: 1px solid #313244;
-}}
-#brand {{
-    color: {TEXT};
-    font-family: "Segoe UI", sans-serif;
-    font-size: 15px;
-    font-weight: bold;
-    padding: 0px;
-}}
-#brand_accent {{
-    color: {ACCENT};
-}}
-QPushButton {{
-    color: {SUBTEXT};
-    background-color: transparent;
-    border: none;
-    padding: 10px 16px;
-    text-align: left;
-    font-size: 14px;
-    font-family: "Segoe UI", sans-serif;
-    border-radius: 8px;
-    margin: 1px 8px;
-}}
-QPushButton:hover {{
-    background-color: rgba(205, 214, 244, 0.06);
-    color: {TEXT};
-}}
-QPushButton[active="true"] {{
-    color: {ACCENT};
-    background-color: rgba(137, 180, 250, 0.15);
-    font-weight: bold;
-}}
-"""
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Talk2Type")
-        self.setStyleSheet(_QSS)
 
         root = QWidget()
         self.setCentralWidget(root)
@@ -152,5 +106,4 @@ class MainWindow(QMainWindow):
 
     def refresh_current_page(self):
         page = self._stack.currentWidget()
-        if hasattr(page, "refresh_data"):
-            page.refresh_data()
+        page.refresh_data()

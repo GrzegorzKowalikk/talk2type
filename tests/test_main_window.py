@@ -75,16 +75,9 @@ def test_active_button_highlight(win, qt_app):
 
 # --- Dark theme colors ---
 
-def test_window_dark_background(win):
-    ss = win.styleSheet()
-    assert "#1e1e2e" in ss
+def test_theme_colors():
+    from talk2type.ui.theme import QSS
 
-
-def test_sidebar_dark_background(win):
-    ss = win.styleSheet()
-    assert "#11111b" in ss or "#1e1e2e" in ss
-
-
-def test_text_color_light(win):
-    ss = win.styleSheet()
-    assert "#cdd6f4" in ss
+    assert "#1e1e2e" in QSS
+    assert "#11111b" in QSS
+    assert "#cdd6f4" in QSS
