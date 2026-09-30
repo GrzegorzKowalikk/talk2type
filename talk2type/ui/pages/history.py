@@ -14,10 +14,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sqlmodel import select
-
 from talk2type.db.engine import get_session
 from talk2type.db.model import Transcription
+from talk2type.db.repository import TranscriptionRepository
 from talk2type.ui.detail_dialog import TranscriptionDetailDialog
 
 DARK_BG = "#1e1e2e"
@@ -154,23 +153,34 @@ class HistoryPage(QWidget):
         self._list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self._list)
 
+        self._load_more_btn = QPushButton("Load more")
+        self._load_more_btn.setObjectName("load_more_btn")
+        self._load_more_btn.clicked.connect(self._load_more)
+        layout.addWidget(self._load_more_btn)
+        self._cursor = None
+        self._current_header = None
+
     # --- Public API ---
 
     def refresh_data(self):
-        """Rebuild list from DB."""
+        """Reload the first page, preserving the current search."""
         self._list.clear()
+        self._cursor = None
+        self._current_header = None
+        self._load_more()
+
+    def _load_more(self):
         with get_session() as session:
-            rows = session.exec(
-                select(Transcription).order_by(Transcription.ts.desc())
-            ).all()
-            # Extract data while session is active to avoid DetachedInstanceError
-            records = [
-                (r.id, r.ts, r.cleaned) for r in rows
-            ]
+            records = TranscriptionRepository(session).history(
+                limit=51, query=self._search.text(), before=self._cursor,
+            )
+        self._load_more_btn.setVisible(len(records) > 50)
+        records = records[:50]
+        if records:
+            self._cursor = (records[-1].ts, records[-1].id)
 
         today = datetime.now().date()
         yesterday = today - timedelta(days=1)
-        current_header = None
 
         for row_id, ts, cleaned in records:
             row_date = ts.date()
@@ -181,8 +191,8 @@ class HistoryPage(QWidget):
             else:
                 header = ts.strftime("%B %d, %Y")
 
-            if header != current_header:
-                current_header = header
+            if header != self._current_header:
+                self._current_header = header
                 h_item = QListWidgetItem(header)
                 h_item.setData(_HEADER_ROLE, True)
                 h_item.setFlags(h_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
@@ -202,22 +212,8 @@ class HistoryPage(QWidget):
     # --- Private ---
 
     def _filter(self, text: str):
-        query = text.lower()
-        for i in range(self._list.count()):
-            item = self._list.item(i)
-            is_header = item.data(_HEADER_ROLE) is True
-            if is_header:
-                item.setHidden(True)
-            else:
-                match = not query or query in item.text().lower()
-                item.setHidden(not match)
-                if match:
-                    # Un-hide the most recent header above this item
-                    for j in range(i - 1, -1, -1):
-                        prev = self._list.item(j)
-                        if prev.data(_HEADER_ROLE) is True:
-                            prev.setHidden(False)
-                            break
+        self._search.setText(text)
+        self.refresh_data()
 
     def _clear_search(self):
         self._search.setText("")
@@ -259,7 +255,6 @@ class HistoryPage(QWidget):
             if obj:
                 session.delete(obj)
         self.refresh_data()
-        self._filter(self._search.text())
 
     def _on_item_clicked(self, item: QListWidgetItem) -> None:
         row_id = item.data(_ID_ROLE)

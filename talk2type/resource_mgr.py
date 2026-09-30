@@ -40,21 +40,36 @@ class ResourceManager:
         self._last_activity = time.monotonic()
         self._stop_evt = threading.Event()
         self._unloaded = True
+        self._lock = threading.RLock()
+        self._users = 0
 
     def mark_activity(self):
-        self._last_activity = time.monotonic()
-        self._unloaded = False
+        with self._lock:
+            self._last_activity = time.monotonic()
+            self._unloaded = False
+
+    def begin_use(self):
+        with self._lock:
+            self._users += 1
+            self.mark_activity()
+
+    def end_use(self):
+        with self._lock:
+            self._users -= 1
+            self.mark_activity()
 
     def _loop(self):
         while not self._stop_evt.wait(self._poll):
-            if self._unloaded:
-                continue
-            idle = time.monotonic() - self._last_activity
-            if idle > self._idle_timeout or is_fullscreen():
-                reason = "fullscreen" if is_fullscreen() else f"idle {idle:.0f}s"
-                log.info("Unloading models (%s)", reason)
-                self._on_unload()
-                self._unloaded = True
+            with self._lock:
+                if self._unloaded or self._users:
+                    continue
+                idle = time.monotonic() - self._last_activity
+                fullscreen = is_fullscreen()
+                if idle > self._idle_timeout or fullscreen:
+                    reason = "fullscreen" if fullscreen else f"idle {idle:.0f}s"
+                    log.info("Unloading models (%s)", reason)
+                    self._on_unload()
+                    self._unloaded = True
 
     def start(self):
         threading.Thread(target=self._loop, daemon=True).start()

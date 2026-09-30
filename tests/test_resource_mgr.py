@@ -77,3 +77,23 @@ def test_fullscreen_triggers_unload(mock_fs):
     mgr.stop()
 
     on_unload.assert_called_once()
+
+
+def test_active_users_defer_fullscreen_unload_until_last_user_finishes():
+    import threading
+    from talk2type.resource_mgr import ResourceManager
+
+    unloaded = threading.Event()
+    mgr = ResourceManager(unloaded.set, poll_sec=0.01)
+    with patch("talk2type.resource_mgr.is_fullscreen", return_value=True):
+        mgr.begin_use()
+        mgr.begin_use()
+        mgr.start()
+        try:
+            assert not unloaded.wait(0.05)
+            mgr.end_use()
+            assert not unloaded.wait(0.05)
+            mgr.end_use()
+            assert unloaded.wait(1)
+        finally:
+            mgr.stop()

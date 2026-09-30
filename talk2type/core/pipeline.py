@@ -1,4 +1,5 @@
 import logging
+import queue
 import threading
 import time
 
@@ -17,7 +18,8 @@ class DictationPipeline:
     """Orchestrates record -> STT -> LLM -> paste with cancellation between stages."""
 
     def __init__(self, machine, recorder, transcription, cleanup, paste,
-                 level_callback=None, on_activity=lambda: None):
+                 level_callback=None, on_activity=lambda: None,
+                 begin_use=lambda: None, end_use=lambda: None):
         self._machine = machine
         self._recorder = recorder
         self._transcription = transcription
@@ -25,44 +27,93 @@ class DictationPipeline:
         self._paste = paste
         self._level_callback = level_callback
         self._on_activity = on_activity
+        self._begin_use = begin_use
+        self._end_use = end_use
+        self._event_lock = threading.RLock()
         # written/read only from the pynput listener thread (events arrive
         # sequentially); workers get their token as an argument, not via this attr
         self._token: CancellationToken | None = None
+        self._stopped = False
+        self._jobs = queue.Queue()
+        threading.Thread(target=self._work, daemon=True).start()
 
     # --- events (pynput thread) ---
 
     def on_press(self, lang: str) -> None:
-        if not self._machine.press(lang):
-            return
-        self._on_activity()
-        self._recorder.start(level_callback=self._level_callback)
-        threading.Thread(target=self._preload, daemon=True).start()
-        log.info("Recording started [%s]", lang)
+        with self._event_lock:
+            if self._stopped or not self._machine.press(lang):
+                return
+            self._begin_use()
+            self._on_activity()
+            try:
+                self._recorder.start(level_callback=self._level_callback)
+            except Exception:
+                log.exception("Recording start failed")
+                self._end_use()
+                self._machine.release()
+                self._machine.finish("error")
+                return
+            self._token = CancellationToken()
+            self._submit(self._preload, (), self._token)
+            log.info("Recording started [%s]", lang)
 
     def on_release(self, _lang: str | None = None) -> None:
-        if not self._machine.release():
-            return
-        audio = self._recorder.stop()
-        if audio.size < MIN_SAMPLES:
-            log.info("Audio too short (%d samples) -- discarded", audio.size)
-            self._machine.finish("too_short")
-            return
-        token = CancellationToken()
-        self._token = token
-        threading.Thread(
-            target=self._run, args=(audio, self._machine.lang, token), daemon=True
-        ).start()
+        with self._event_lock:
+            if not self._machine.release():
+                return
+            try:
+                audio = self._recorder.stop()
+            except Exception:
+                log.exception("Recording stop failed")
+                self._token.cancel()
+                self._end_use()
+                self._machine.finish("error")
+                return
+            if audio.size < MIN_SAMPLES:
+                log.info("Audio too short (%d samples) -- discarded", audio.size)
+                self._token.cancel()
+                self._end_use()
+                self._machine.finish("too_short")
+                return
+            self._submit(self._run, (audio, self._machine.lang, self._token), self._token)
+            self._end_use()
 
     def on_cancel(self) -> None:
-        prev = self._machine.cancel()
-        if prev is State.RECORDING:
-            self._recorder.stop()
-            log.info("Recording cancelled")
-        elif prev is State.PROCESSING and self._token is not None:
-            self._token.cancel()
-            log.info("Processing cancelled -- result will be discarded")
+        with self._event_lock:
+            if self._token is not None:
+                self._token.cancel()
+            prev = self._machine.cancel()
+            if prev is State.RECORDING:
+                try:
+                    self._recorder.stop()
+                except Exception:
+                    log.exception("Recording cancel failed")
+                finally:
+                    self._end_use()
+                log.info("Recording cancelled")
+            elif prev is State.PROCESSING and self._token is not None:
+                log.info("Processing cancelled -- result will be discarded")
+
+    def stop(self) -> None:
+        with self._event_lock:
+            self._stopped = True
+            self.on_cancel()
 
     # --- worker thread ---
+
+    def _submit(self, callback, args, token):
+        self._begin_use()
+        self._jobs.put((callback, args, token))
+
+    def _work(self) -> None:
+        while True:
+            callback, args, token = self._jobs.get()
+            try:
+                if not token.cancelled:
+                    callback(*args)
+            finally:
+                self._end_use()
+                self._jobs.task_done()
 
     def _preload(self) -> None:
         try:
@@ -90,13 +141,18 @@ class DictationPipeline:
                 return
             log.info("LLM %dms: %s", llm_ms, cleaned)
 
-            self._paste.paste(cleaned)
+            with self._event_lock:
+                if token.cancelled:
+                    return
+                self._paste.paste(cleaned)
             if raw:
                 save_transcription(raw, cleaned, stt_ms=stt_ms, llm_ms=llm_ms)
         except Exception:
             log.exception("Pipeline failed")
-            if not token.cancelled:
-                self._machine.finish("error")
+            with self._event_lock:
+                if not token.cancelled:
+                    self._machine.finish("error")
         else:
-            if not token.cancelled:
-                self._machine.finish("done")
+            with self._event_lock:
+                if not token.cancelled:
+                    self._machine.finish("done")

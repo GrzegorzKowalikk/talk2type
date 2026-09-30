@@ -10,10 +10,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlmodel import select
 
 from talk2type.db.engine import get_session
-from talk2type.db.model import Transcription
+from talk2type.db.repository import TranscriptionRepository
 from talk2type.ui.detail_dialog import TranscriptionDetailDialog
 
 _ID_ROLE = Qt.ItemDataRole.UserRole
@@ -180,38 +179,14 @@ class HomePage(QWidget):
             self._load_recent(session)
 
     def _load_stats(self, session) -> None:  # type: ignore[type-arg]
-        rows = session.exec(select(Transcription)).all()
-
-        if not rows:
-            self.total_words_label.setText("0")
-            self.days_label.setText("0")
-            self.wpm_label.setText("0")
-            return
-
-        total_words = sum(len(r.cleaned.split()) for r in rows)
+        total_words, distinct_days, avg_wpm = TranscriptionRepository(session).statistics()
         self.total_words_label.setText(str(total_words))
-
-        distinct_days = len({r.ts.date() for r in rows})
         self.days_label.setText(str(distinct_days))
-
-        # WPM: average across rows with non-zero duration
-        wpms: list[float] = []
-        for r in rows:
-            dur_ms = (r.stt_ms or 0) + (r.llm_ms or 0)
-            if dur_ms == 0:
-                continue
-            words = len(r.cleaned.split())
-            duration_min = dur_ms / 60_000
-            wpms.append(words / duration_min)
-
-        avg_wpm = int(sum(wpms) / len(wpms)) if wpms else 0
         self.wpm_label.setText(str(avg_wpm))
 
     def _load_recent(self, session) -> None:  # type: ignore[type-arg]
         self.recent_list.clear()
-        rows = session.exec(
-            select(Transcription).order_by(Transcription.ts.desc()).limit(20)  # type: ignore[attr-defined]
-        ).all()
+        rows = TranscriptionRepository(session).history(limit=20)
 
         for r in rows:
             time_str = r.ts.strftime("%I:%M %p")

@@ -303,3 +303,40 @@ def test_context_menu_delete_action(qt_app):
         remaining = s.exec(select(Transcription)).all()
         assert len(remaining) == 0
     w.close()
+
+
+def test_history_loads_pages_and_searches_beyond_first_page(qt_app):
+    from PySide6.QtWidgets import QLineEdit, QListWidget, QPushButton
+    from talk2type.ui.pages.history import HistoryPage
+
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        for i in range(55):
+            session.add(Transcription(raw="raw", cleaned=f"entry {i}", ts=datetime(2026, 1, 1)))
+        session.commit()
+
+    @contextmanager
+    def session_scope():
+        with Session(engine) as session:
+            yield session
+
+    page = HistoryPage()
+    with patch("talk2type.ui.pages.history.get_session", session_scope):
+        page.refresh_data()
+        items = page.findChild(QListWidget, "transcription_list")
+        more = page.findChild(QPushButton, "load_more_btn")
+        assert items.count() == 51  # 50 entries and a single date heading
+        more.click()
+        assert items.count() == 56
+        assert more.isHidden()
+        search = page.findChild(QLineEdit, "search_bar")
+        search.setText("entry 0")
+        search.textEdited.emit("entry 0")
+        assert items.count() == 2
+        assert "entry 0" in items.item(1).text()
+        page.refresh_data()
+        assert items.count() == 2
+        page.findChild(QPushButton, "clear_btn").click()
+        assert items.count() == 51
+    page.close()

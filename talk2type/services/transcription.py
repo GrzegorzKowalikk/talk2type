@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from faster_whisper import WhisperModel
+from faster_whisper import WhisperModel, download_model
 from sqlmodel import select
 
 from talk2type.config import WHISPER_COMPUTE, WHISPER_DEVICE, WHISPER_MODEL
@@ -58,12 +58,27 @@ class TranscriptionService:
         with self._load_lock:
             if self._model is None:
                 t0 = time.monotonic()
+                model_path = (
+                    WHISPER_MODEL if os.path.isdir(WHISPER_MODEL)
+                    else download_model(WHISPER_MODEL)
+                )
+                resolved_at = time.monotonic()
+                log.info(
+                    "Whisper model resolution in %.3fs (path=%s)",
+                    resolved_at - t0, model_path,
+                )
                 self._model = WhisperModel(
-                    WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
+                    model_path, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE
+                )
+                loaded_at = time.monotonic()
+                # Includes model file reading, device initialization and tokenizer setup.
+                log.info(
+                    "Whisper model initialization in %.3fs (device=%s)",
+                    loaded_at - resolved_at, WHISPER_DEVICE,
                 )
                 log.info(
                     "Whisper loaded (%s, %s) in %.1fs",
-                    WHISPER_MODEL, WHISPER_COMPUTE, time.monotonic() - t0,
+                    WHISPER_MODEL, WHISPER_COMPUTE, loaded_at - t0,
                 )
             return self._model
 

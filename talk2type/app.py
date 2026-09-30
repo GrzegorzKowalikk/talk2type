@@ -49,6 +49,8 @@ class App:
             paste=PasteService(),
             level_callback=self._overlay.push_rms,
             on_activity=self._resmgr.mark_activity,
+            begin_use=self._resmgr.begin_use,
+            end_use=self._resmgr.end_use,
         )
         self._hotkey = HotkeyListener(
             on_start=self._pipeline.on_press,
@@ -94,6 +96,7 @@ class App:
     def shutdown(self):
         log.info("Shutting down")
         self._hotkey.stop()
+        self._pipeline.stop()
         self._resmgr.stop()
         self._unload_models()
         self._qt.quit()

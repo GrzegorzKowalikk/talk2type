@@ -1,3 +1,4 @@
+import logging
 import threading
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
@@ -149,3 +150,62 @@ def test_transcribe_does_not_hit_db():
         with patch("talk2type.services.transcription.get_session") as gs:
             svc.transcribe(np.zeros(16000, dtype=np.float32))
             gs.assert_not_called()
+
+
+@pytest.fixture(autouse=True)
+def resolved_model_path():
+    # Keep every model-loading test offline as well as off the GPU.
+    with patch(
+        "talk2type.services.transcription.download_model",
+        return_value=r"C:\cache\whisper",
+    ) as resolve:
+        yield resolve
+
+
+def test_preload_reports_resolution_and_initialization_separately(
+    fake_get_session, resolved_model_path, caplog,
+):
+    from talk2type.services.transcription import TranscriptionService
+
+    now = [100.0]
+
+    def resolve(*args, **kwargs):
+        now[0] += 2.0
+        return r"C:\cache\whisper"
+
+    def initialize(*args, **kwargs):
+        now[0] += 3.0
+        return MagicMock()
+
+    resolved_model_path.side_effect = resolve
+    with patch("talk2type.services.transcription.get_session", fake_get_session), patch(
+        "talk2type.services.transcription.WhisperModel", side_effect=initialize,
+    ) as model, patch(
+        "talk2type.services.transcription.time.monotonic", side_effect=lambda: now[0],
+    ), caplog.at_level(logging.INFO, logger="talk2type.services.transcription"):
+        svc = TranscriptionService()
+        resolved_model_path.assert_not_called()
+        model.assert_not_called()
+        svc.preload()
+        svc.preload()
+
+    resolved_model_path.assert_called_once()
+    assert model.call_args.args == (r"C:\cache\whisper",)
+    assert "Whisper model resolution in 2.000s" in caplog.text
+    assert "Whisper model initialization in 3.000s" in caplog.text
+    assert "in 5.0s" in caplog.text
+
+
+def test_preload_local_model_directory_does_not_contact_hub(
+    tmp_path, fake_get_session, resolved_model_path,
+):
+    from talk2type.services.transcription import TranscriptionService
+
+    with patch("talk2type.services.transcription.get_session", fake_get_session), patch(
+        "talk2type.services.transcription.WHISPER_MODEL", str(tmp_path),
+    ), patch("talk2type.services.transcription.WhisperModel") as model:
+        svc = TranscriptionService()
+        svc.preload()
+
+    resolved_model_path.assert_not_called()
+    assert model.call_args.args == (str(tmp_path),)
